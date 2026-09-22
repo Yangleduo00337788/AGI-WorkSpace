@@ -1,0 +1,394 @@
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
+import RemotePushDialog from '@/components/RemotePushDialog.vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useI18n } from '@/composables/useI18n'
+import { useRoles } from '@/composables/useRoles'
+import { docsBySlug } from '@/lib/content'
+import { ROLES, type RoleId } from '@/lib/roles'
+import { cn } from '@/lib/utils'
+import {
+  bindRemoteGit,
+  detectProviderFromRepo,
+  disconnectRemoteGit,
+  gitProviders,
+  hydrateRemoteGit,
+  updateRemoteOptions,
+  useRemoteGit,
+  type GitProvider,
+} from '@/lib/remote-git'
+import {
+  authorizeWorkspace,
+  disconnectWorkspace,
+  reconnectWorkspace,
+  useWorkspaceFs,
+} from '@/lib/workspace-fs'
+
+const { locale, t } = useI18n()
+const { selected, ownedSlugs, toggle } = useRoles()
+const { status, folderName, error } = useWorkspaceFs()
+const {
+  status: remoteStatus,
+  ready: remoteReady,
+  lastError: remoteLastError,
+  lastPushAt,
+  summary: remoteSummary,
+  provider: boundProvider,
+  contentRoot: boundRoot,
+  repoPath,
+  branch: boundBranch,
+  host: boundHost,
+  autoPush: boundAutoPush,
+  tokenStored,
+} = useRemoteGit()
+const providers = gitProviders()
+const providerKeys = ['github', 'gitee', 'gitlab'] as const
+const working = ref(false)
+const message = ref('')
+const remoteWorking = ref(false)
+const remoteMessage = ref('')
+const provider = ref<GitProvider>('github')
+const repoInput = ref('')
+const branch = ref('main')
+const token = ref('')
+const contentRoot = ref('src/content')
+const host = ref('https://gitlab.com')
+const autoPush = ref(true)
+const pushOpen = ref(false)
+
+watch(repoInput, (value) => {
+  const detected = detectProviderFromRepo(value)
+  if (detected) provider.value = detected
+})
+
+watch(
+  [remoteReady, repoPath, boundBranch, boundRoot, boundHost, boundProvider, boundAutoPush],
+  () => {
+    if (!remoteReady.value) return
+    if (boundProvider.value) provider.value = boundProvider.value
+    if (repoPath.value) repoInput.value = repoPath.value
+    if (boundBranch.value) branch.value = boundBranch.value
+    if (boundRoot.value) contentRoot.value = boundRoot.value
+    if (boundHost.value) host.value = boundHost.value
+    autoPush.value = boundAutoPush.value
+  },
+  { immediate: true },
+)
+
+const writableDocs = computed(() => {
+  const list = [...ownedSlugs.value]
+    .map((slug) => docsBySlug.get(slug))
+    .filter((doc): doc is NonNullable<typeof doc> => Boolean(doc))
+  const seen = new Set<string>()
+  return list.filter((doc) => {
+    const key = doc.slug || 'index'
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+})
+
+function titleOf(id: RoleId) {
+  const role = ROLES.find((item) => item.id === id)!
+  return locale.value === 'zh' ? role.titleZh : role.titleEn
+}
+
+function descOf(id: RoleId) {
+  const role = ROLES.find((item) => item.id === id)!
+  return locale.value === 'zh' ? role.descZh : role.descEn
+}
+
+function checked(id: RoleId) {
+  return selected.value.includes(id)
+}
+
+async function connect() {
+  working.value = true
+  message.value = ''
+  try {
+    await authorizeWorkspace()
+    await hydrateRemoteGit()
+    message.value = t.value('settingsOk')
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') return
+    message.value = error.value === 'invalid' ? t.value('settingsInvalid') : t.value('settingsFail')
+  } finally {
+    working.value = false
+  }
+}
+
+async function reconnect() {
+  working.value = true
+  message.value = ''
+  try {
+    await reconnectWorkspace()
+    await hydrateRemoteGit()
+    message.value = t.value('settingsOk')
+  } catch {
+    message.value = t.value('settingsFail')
+  } finally {
+    working.value = false
+  }
+}
+
+async function disconnect() {
+  working.value = true
+  message.value = ''
+  try {
+    await disconnectWorkspace()
+  } finally {
+    working.value = false
+  }
+}
+
+async function bindRemote() {
+  remoteWorking.value = true
+  remoteMessage.value = ''
+  try {
+    await bindRemoteGit({
+      provider: provider.value,
+      repoInput: repoInput.value,
+      branch: branch.value,
+      token: token.value,
+      contentRoot: contentRoot.value,
+      autoPush: autoPush.value,
+      host: host.value,
+    })
+    token.value = ''
+    remoteMessage.value = t.value('remoteOk')
+  } catch (err) {
+    const code = err instanceof Error ? err.message : ''
+    if (code === 'REPO_INVALID') remoteMessage.value = t.value('remoteRepoInvalid')
+    else if (code === 'TOKEN_REQUIRED') remoteMessage.value = t.value('remoteTokenRequired')
+    else remoteMessage.value = remoteLastError.value || code || t.value('remoteFail')
+  } finally {
+    remoteWorking.value = false
+  }
+}
+
+async function unbindRemote() {
+  remoteWorking.value = true
+  remoteMessage.value = ''
+  try {
+    await disconnectRemoteGit()
+    repoInput.value = ''
+    token.value = ''
+  } finally {
+    remoteWorking.value = false
+  }
+}
+
+async function toggleAutoPush() {
+  autoPush.value = !autoPush.value
+  if (remoteReady.value) await updateRemoteOptions({ autoPush: autoPush.value })
+}
+
+function tokenHelpHref() {
+  return providers[provider.value].tokenHelp
+}
+</script>
+
+<template>
+  <div class="px-6 py-8 md:px-10 lg:px-12">
+    <article class="mx-auto max-w-3xl">
+      <h1 class="text-3xl font-semibold tracking-tight">{{ t('settingsTitle') }}</h1>
+      <p class="mt-2 text-sm leading-6 text-muted-foreground">{{ t('settingsHint') }}</p>
+      <div class="mt-3 h-px w-full bg-border" />
+
+      <section id="roles" class="mt-8">
+        <h2 class="text-sm font-semibold">{{ t('rolesTitle') }}</h2>
+        <p class="mt-2 text-sm leading-6 text-muted-foreground">{{ t('rolesHint') }}</p>
+
+        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+          <button
+            v-for="role in ROLES"
+            :key="role.id"
+            type="button"
+            :class="
+              cn(
+                'rounded-xl border bg-card p-4 text-left transition-colors hover:bg-accent/40',
+                checked(role.id) && 'border-foreground/20 bg-accent/50',
+              )
+            "
+            @click="toggle(role.id)"
+          >
+            <div class="flex items-start gap-3">
+              <span
+                :class="
+                  cn(
+                    'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border',
+                    checked(role.id) ? 'border-foreground bg-foreground' : 'border-input bg-background',
+                  )
+                "
+              >
+                <span v-if="checked(role.id)" class="size-1.5 rounded-sm bg-background" />
+              </span>
+              <div class="min-w-0">
+                <div class="text-sm font-medium">{{ role.shortName }} · {{ titleOf(role.id) }}</div>
+                <p class="mt-1 text-[13px] leading-5 text-muted-foreground">{{ descOf(role.id) }}</p>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        <div class="mt-4 rounded-xl border bg-muted/40 p-5">
+          <h3 class="text-sm font-semibold">{{ t('writableNow') }}</h3>
+          <p v-if="!selected.length" class="mt-2 text-sm leading-6 text-muted-foreground">
+            {{ t('writableEmpty') }}
+          </p>
+          <ul v-else class="mt-3 space-y-1.5">
+            <li v-for="doc in writableDocs" :key="doc.slug || 'index'">
+              <RouterLink
+                :to="doc.slug ? `/${doc.slug}` : '/'"
+                class="text-sm text-foreground underline-offset-4 hover:underline"
+              >
+                {{ doc.title }}
+              </RouterLink>
+              <span v-if="doc.description" class="text-xs text-muted-foreground"> · {{ doc.description }}</span>
+            </li>
+          </ul>
+          <p class="mt-3 text-xs leading-5 text-muted-foreground">{{ t('writableNote') }}</p>
+        </div>
+      </section>
+
+      <section class="mt-8 rounded-xl border bg-card p-5">
+        <h2 class="text-sm font-semibold">{{ t('settingsFolder') }}</h2>
+        <p class="mt-2 text-sm leading-6 text-muted-foreground">{{ t('settingsFolderHint') }}</p>
+
+        <p class="mt-4 text-sm">
+          <span class="text-muted-foreground">{{ t('settingsStatus') }}：</span>
+          <span v-if="status === 'ready'">{{ t('settingsReady') }}（{{ folderName }}）</span>
+          <span v-else-if="status === 'need-permission'">{{ t('settingsNeedPerm') }}（{{ folderName }}）</span>
+          <span v-else-if="status === 'unsupported'">{{ t('settingsUnsupported') }}</span>
+          <span v-else>{{ t('settingsDisconnected') }}</span>
+        </p>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+          <Button size="sm" :disabled="working || status === 'unsupported'" @click="connect">
+            {{ t('settingsAuthorize') }}
+          </Button>
+          <Button
+            v-if="status === 'need-permission'"
+            size="sm"
+            variant="outline"
+            :disabled="working"
+            @click="reconnect"
+          >
+            {{ t('settingsReconnect') }}
+          </Button>
+          <Button
+            v-if="status === 'ready' || status === 'need-permission'"
+            size="sm"
+            variant="ghost"
+            :disabled="working"
+            @click="disconnect"
+          >
+            {{ t('settingsDisconnect') }}
+          </Button>
+        </div>
+        <p v-if="message" class="mt-3 text-sm text-muted-foreground">{{ message }}</p>
+      </section>
+
+      <section id="remote" class="mt-8 rounded-xl border bg-card p-5">
+        <h2 class="text-sm font-semibold">{{ t('remoteTitle') }}</h2>
+        <p class="mt-2 text-sm leading-6 text-muted-foreground">{{ t('remoteHint') }}</p>
+
+        <p class="mt-4 text-sm">
+          <span class="text-muted-foreground">{{ t('remoteStatus') }}：</span>
+          <span v-if="remoteReady">{{ t('remoteReady') }}（{{ remoteSummary }}）</span>
+          <span v-else-if="remoteStatus === 'error'">{{ t('remoteError') }}</span>
+          <span v-else>{{ t('remoteDisconnected') }}</span>
+        </p>
+        <p v-if="lastPushAt" class="mt-1 text-xs text-muted-foreground">
+          {{ t('remoteLastPush') }}：{{ lastPushAt.replace('T', ' ').slice(0, 19) }}
+        </p>
+        <p v-if="remoteReady" class="mt-1 text-xs text-muted-foreground">{{ t('remoteTokenSaved') }}</p>
+
+        <div class="mt-4">
+          <p class="text-xs text-muted-foreground">{{ t('remoteProvider') }}</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <Button
+              v-for="key in providerKeys"
+              :key="key"
+              type="button"
+              size="sm"
+              :variant="provider === key ? 'default' : 'outline'"
+              @click="provider = key"
+            >
+              {{ providers[key].label }}
+            </Button>
+          </div>
+        </div>
+
+        <label class="mt-4 block text-xs text-muted-foreground">{{ t('remoteRepo') }}</label>
+        <Input v-model="repoInput" class="mt-1.5" :placeholder="t('remoteRepoHint')" autocomplete="off" />
+
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="block text-xs text-muted-foreground">{{ t('remoteBranch') }}</label>
+            <Input v-model="branch" class="mt-1.5" placeholder="main" autocomplete="off" />
+          </div>
+          <div>
+            <label class="block text-xs text-muted-foreground">{{ t('remoteRoot') }}</label>
+            <Input v-model="contentRoot" class="mt-1.5" placeholder="src/content" autocomplete="off" />
+          </div>
+        </div>
+        <p class="mt-1.5 text-xs leading-5 text-muted-foreground">{{ t('remoteRootHint') }}</p>
+
+        <div v-if="provider === 'gitlab'" class="mt-4">
+          <label class="block text-xs text-muted-foreground">{{ t('remoteHost') }}</label>
+          <Input v-model="host" class="mt-1.5" placeholder="https://gitlab.com" autocomplete="off" />
+        </div>
+
+        <label class="mt-4 block text-xs text-muted-foreground">{{ t('remoteToken') }}</label>
+        <Input
+          v-model="token"
+          class="mt-1.5"
+          type="password"
+          autocomplete="off"
+          :placeholder="tokenStored ? t('remoteTokenPlaceholder') : t('remoteTokenHint')"
+        />
+        <p class="mt-1.5 text-xs leading-5 text-muted-foreground">{{ t('remoteTokenFileHint') }}</p>
+        <a
+          :href="tokenHelpHref()"
+          target="_blank"
+          rel="noreferrer noopener"
+          class="mt-1.5 inline-block text-xs text-muted-foreground underline-offset-4 hover:underline"
+        >
+          {{ t('remoteTokenHelp') }}
+        </a>
+
+        <label class="mt-4 flex cursor-pointer items-center gap-2 text-sm">
+          <input type="checkbox" class="size-4 accent-foreground" :checked="autoPush" @change="toggleAutoPush" />
+          {{ t('remoteAutoPush') }}
+        </label>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+          <Button size="sm" :disabled="remoteWorking" @click="bindRemote">{{ t('remoteBind') }}</Button>
+          <Button
+            v-if="remoteReady"
+            size="sm"
+            variant="warning"
+            :disabled="remoteWorking"
+            @click="pushOpen = true"
+          >
+            {{ t('remotePush') }}
+          </Button>
+          <Button
+            v-if="remoteReady"
+            size="sm"
+            variant="ghost"
+            :disabled="remoteWorking"
+            @click="unbindRemote"
+          >
+            {{ t('remoteDisconnect') }}
+          </Button>
+        </div>
+        <p v-if="remoteMessage" class="mt-3 text-sm text-muted-foreground">{{ remoteMessage }}</p>
+      </section>
+    </article>
+    <RemotePushDialog :open="pushOpen" @close="pushOpen = false" />
+  </div>
+</template>
