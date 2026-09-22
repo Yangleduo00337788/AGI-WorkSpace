@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, nextTick, ref, watch } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import SettingsPanel from '@/components/SettingsPanel.vue'
 import RemotePushDialog from '@/components/RemotePushDialog.vue'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,7 @@ import {
   usePushCopy,
   type PushCopyBundle,
 } from '@/lib/push-copy'
+import { spaceHash } from '@/lib/space-nav'
 import {
   authorizeWorkspace,
   disconnectWorkspace,
@@ -34,6 +35,7 @@ import {
 } from '@/lib/workspace-fs'
 
 const { locale, t } = useI18n()
+const route = useRoute()
 const { selected, ownedSlugs, toggle } = useRoles()
 const { status, folderName, error } = useWorkspaceFs()
 const {
@@ -64,10 +66,10 @@ const contentRoot = ref('src/content')
 const host = ref('https://gitlab.com')
 const autoPush = ref(true)
 const pushOpen = ref(false)
-const openRoles = ref(true)
+const openRoles = ref(false)
 const openFolder = ref(false)
-const openRemote = ref(true)
-const openCopy = ref(true)
+const openRemote = ref(false)
+const openCopy = ref(false)
 const { bundle: copyBundle } = usePushCopy()
 const firstSuccess = ref('')
 const firstHintText = ref('')
@@ -237,6 +239,21 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => [route.path, route.hash] as const,
+  async () => {
+    if (route.path !== '/settings') return
+    const id = spaceHash(route.hash)
+    openRoles.value = id === 'roles'
+    openFolder.value = id === 'folder'
+    openRemote.value = id === 'remote'
+    openCopy.value = id === 'copy'
+    await nextTick()
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  },
+  { immediate: true },
+)
+
 function tokenHelpHref() {
   return providers[provider.value].tokenHelp
 }
@@ -302,7 +319,7 @@ function tokenHelpHref() {
         </div>
       </SettingsPanel>
 
-      <SettingsPanel v-model:open="openFolder" :title="t('settingsFolder')" :hint="t('settingsFolderHint')">
+      <SettingsPanel id="folder" v-model:open="openFolder" :title="t('settingsFolder')" :hint="t('settingsFolderHint')">
 
         <p class="mt-4 text-sm">
           <span class="text-muted-foreground">{{ t('settingsStatus') }}：</span>
