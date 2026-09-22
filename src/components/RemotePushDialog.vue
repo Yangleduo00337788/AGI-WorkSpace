@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/composables/useI18n'
 import { firePushConfetti } from '@/lib/confetti'
-import { pushSuccessLines } from '@/i18n/messages'
+import { packFor, pickPushSuccessLine } from '@/lib/push-copy'
 import { pushWorkspaceDocs } from '@/lib/remote-git'
 
 const props = defineProps<{
@@ -32,8 +32,7 @@ function defaultMessage() {
 }
 
 function pickSuccessLine() {
-  const pool = pushSuccessLines[locale.value]
-  return pool[Math.floor(Math.random() * pool.length)] ?? t.value('pushOk')
+  return pickPushSuccessLine(locale.value) || t.value('pushOk')
 }
 
 watch(
@@ -71,7 +70,7 @@ async function startPush() {
     })
     percent.value = 100
     firstDone.value = outcome.first
-    result.value = outcome.first ? t.value('pushFirstSuccess') : pickSuccessLine()
+    result.value = outcome.first ? packFor(locale.value).firstSuccess : pickSuccessLine()
     phase.value = 'done'
     if (outcome.first) firePushConfetti()
   } catch (error) {
@@ -115,7 +114,7 @@ async function startPush() {
 
         <template v-else-if="phase === 'done'">
           <p class="mt-4 text-sm font-medium">{{ result }}</p>
-          <p v-if="firstDone" class="mt-1 text-xs text-muted-foreground">{{ t('pushFirstHint') }}</p>
+          <p v-if="firstDone" class="mt-1 text-xs text-muted-foreground">{{ packFor(locale).firstHint }}</p>
           <div class="mt-4 flex justify-end">
             <Button size="sm" @click="close">{{ t('pushClose') }}</Button>
           </div>

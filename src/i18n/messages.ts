@@ -113,6 +113,15 @@ export const messages = {
     pushOk: '推送成功。',
     pushFirstSuccess: '恭喜您完成首次推送',
     pushFirstHint: '远程仓库已经记下这次文档。之后每次推送都会留下新的提交记录。',
+    copyTitle: '推送成功文案',
+    copyHint: '推送完成后会随机抽一条展示。改完保存到 src/config/push-success.json，随仓库一起走，换项目只改这份配置。',
+    copyFirst: '首次推送标题',
+    copyFirstHintLabel: '首次推送说明',
+    copyLines: '日常推送文案',
+    copyLinesHint: '一行一条，空行会被忽略。推送成功时随机选一条。',
+    copySave: '保存文案',
+    copySaved: '文案已写入项目配置文件。',
+    copyNeedFolder: '请先授权本地工作目录，才能把文案写进项目文件。',
   },
   en: {
     product: 'AGI-WorkSpace',
@@ -226,26 +235,16 @@ export const messages = {
     pushOk: 'Push succeeded.',
     pushFirstSuccess: 'Congratulations on your first push',
     pushFirstHint: 'The remote repository now has this snapshot. Later pushes will add new commits.',
+    copyTitle: 'Push success copy',
+    copyHint: 'After a successful push, one line is picked at random. Saving writes src/config/push-success.json in the repo, same as other project config.',
+    copyFirst: 'First-push title',
+    copyFirstHintLabel: 'First-push subtitle',
+    copyLines: 'Everyday success lines',
+    copyLinesHint: 'One line each. Empty lines are ignored. A random line is shown after later pushes.',
+    copySave: 'Save copy',
+    copySaved: 'Copy saved to the project config file.',
+    copyNeedFolder: 'Authorize the local workspace folder before saving copy to disk.',
   },
-} as const
-
-export const pushSuccessLines = {
-  zh: [
-    '推送成功，远程仓库已更新。',
-    '提交已送达，团队可以拉到最新文档了。',
-    '这次同步很干净，继续保持。',
-    '文档已上车，远程分支状态良好。',
-    '又一次稳稳落地，谢谢你的提交。',
-    '变更已写入远程，可以去仓库确认。',
-  ],
-  en: [
-    'Pushed. The remote repository is up to date.',
-    'Commit landed. The team can pull the latest docs.',
-    'Clean sync. Keep going.',
-    'Docs are on the remote branch.',
-    'Another solid landing. Thanks for the commit.',
-    'Changes are on the remote. You can confirm in the repo.',
-  ],
 } as const
 
 export type MessageKey = keyof typeof messages.zh

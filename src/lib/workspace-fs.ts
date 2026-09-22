@@ -186,6 +186,44 @@ export function serializeMarkdown(doc: DocEntry, body: string): string {
   return `---\ntitle: ${yamlScalar(doc.title)}\ndescription: ${yamlScalar(doc.description)}\norder: ${doc.order}\n---\n\n${body.replace(/^\n+/, '')}\n`
 }
 
+function assertSafeRelPath(relPath: string) {
+  const parts = relPath.replaceAll('\\', '/').split('/').filter(Boolean)
+  if (!parts.length || parts.some((part) => part === '.' || part === '..')) {
+    throw new Error('BAD_PATH')
+  }
+  return parts
+}
+
+export async function writeRepoFile(relPath: string, text: string): Promise<void> {
+  if (!rootHandle || status.value !== 'ready') throw new Error('NOT_READY')
+  const parts = assertSafeRelPath(relPath)
+  const fileName = parts.pop()!
+  let dir = rootHandle
+  for (const part of parts) {
+    dir = await dir.getDirectoryHandle(part, { create: true })
+  }
+  const file = await dir.getFileHandle(fileName, { create: true })
+  const writable = await file.createWritable()
+  await writable.write(text)
+  await writable.close()
+}
+
+export async function readRepoFile(relPath: string): Promise<string | null> {
+  if (!rootHandle || status.value !== 'ready') return null
+  try {
+    const parts = assertSafeRelPath(relPath)
+    const fileName = parts.pop()!
+    let dir = rootHandle
+    for (const part of parts) {
+      dir = await dir.getDirectoryHandle(part)
+    }
+    const blob = await (await dir.getFileHandle(fileName)).getFile()
+    return blob.text()
+  } catch {
+    return null
+  }
+}
+
 function assertSafeFileName(name: string) {
   if (!name || name.includes('/') || name.includes('\\') || name === '.' || name === '..') {
     throw new Error('BAD_PATH')

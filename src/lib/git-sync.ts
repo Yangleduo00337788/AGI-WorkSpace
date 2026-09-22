@@ -23,10 +23,31 @@ function rewriteGitHttpUrl(url: string) {
     .replace(/^https:\/\/gitlab\.com/i, `${origin}/__git-remote/gitlab`)
 }
 
-const http = {
-  request: async (args: Parameters<typeof gitRequest>[0]) => {
-    return gitRequest({ ...args, url: rewriteGitHttpUrl(args.url) })
-  },
+function gitAuth(provider: GitProvider, owner: string, token: string) {
+  if (provider === 'github') return { username: 'x-access-token', password: token }
+  if (provider === 'gitlab') return { username: 'oauth2', password: token }
+  return { username: owner, password: token }
+}
+
+function basicAuthHeader(username: string, password: string) {
+  const bytes = new TextEncoder().encode(`${username}:${password}`)
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return `Basic ${btoa(binary)}`
+}
+
+function createGitHttp(username: string, password: string) {
+  const authorization = basicAuthHeader(username, password)
+  return {
+    request: async (args: Parameters<typeof gitRequest>[0]) => {
+      return gitRequest({
+        ...args,
+        url: rewriteGitHttpUrl(args.url),
+        headers: { ...args.headers, Authorization: authorization },
+        fetchOptions: { ...args.fetchOptions, credentials: 'omit' },
+      })
+    },
+  }
 }
 
 function remoteUrl(provider: GitProvider, owner: string, repo: string, host: string) {
@@ -56,8 +77,25 @@ export async function commitAndPushProject(options: {
   const fs = createHandleFs(root)
   const dir = '.'
   const cache = {}
+  const auth = gitAuth(options.provider, options.owner, options.token)
+  const http = createGitHttp(auth.username, auth.password)
   const report = (percent: number, current: string, done = 0, total = 1) => {
     options.onProgress?.({ percent, current, done, total })
+  }
+
+  async function runPhase<T>(from: number, to: number, label: string, task: () => Promise<T>) {
+    let tick = from
+    report(from, label)
+    const timer = window.setInterval(() => {
+      tick = Math.min(to - 1, tick + 1)
+      report(tick, label)
+    }, 350)
+    try {
+      return await task()
+    } finally {
+      window.clearInterval(timer)
+      report(to, label)
+    }
   }
 
   report(6, '读取工作区')
@@ -94,40 +132,39 @@ export async function commitAndPushProject(options: {
   }
 
   let committed = false
-  report(62, 'git commit', staged, Math.max(staged, 1))
   if (staged) {
-    await git.commit({
-      fs,
-      dir,
-      cache,
-      message: options.message,
-      author: {
-        name: options.owner,
-        email: `${options.owner}@users.noreply.${options.provider}.com`,
-      },
+    await runPhase(58, 74, `提交 ${staged} 个文件`, async () => {
+      await git.commit({
+        fs,
+        dir,
+        cache,
+        message: options.message,
+        author: {
+          name: options.owner,
+          email: `${options.owner}@users.noreply.${options.provider}.com`,
+        },
+      })
+      committed = true
     })
-    committed = true
   }
 
-  report(78, 'git push')
-  await git.push({
-    fs,
-    http,
-    dir,
-    cache,
-    url: remoteUrl(options.provider, options.owner, options.repo, options.host),
-    ref: options.branch || 'master',
-    onProgress: (event) => {
-      const loaded = event.loaded ?? 0
-      const total = event.total || 0
-      const slice = total > 0 ? Math.round((loaded / total) * 20) : 8
-      report(Math.min(98, 78 + slice), event.phase || 'git push', loaded, total || staged)
-    },
-    onAuth: () => {
-      if (options.provider === 'github') return { username: 'x-access-token', password: options.token }
-      if (options.provider === 'gitlab') return { username: 'oauth2', password: options.token }
-      return { username: options.owner, password: options.token }
-    },
+  await runPhase(76, 98, '上传到远程仓库', async () => {
+    await git.push({
+      fs,
+      http,
+      dir,
+      cache,
+      url: remoteUrl(options.provider, options.owner, options.repo, options.host),
+      ref: options.branch || 'master',
+      headers: { Authorization: basicAuthHeader(auth.username, auth.password) },
+      onProgress: (event) => {
+        const loaded = event.loaded ?? 0
+        const total = event.total || 0
+        const slice = total > 0 ? Math.round((loaded / total) * 20) : 8
+        report(Math.min(97, 76 + slice), event.phase || '上传到远程仓库', loaded, total || staged)
+      },
+      onAuth: () => auth,
+    })
   })
   report(100, '完成', staged, staged)
   return { staged, committed }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import SettingsPanel from '@/components/SettingsPanel.vue'
 import RemotePushDialog from '@/components/RemotePushDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,6 +20,12 @@ import {
   useRemoteGit,
   type GitProvider,
 } from '@/lib/remote-git'
+import {
+  hydratePushCopy,
+  savePushCopy,
+  usePushCopy,
+  type PushCopyBundle,
+} from '@/lib/push-copy'
 import {
   authorizeWorkspace,
   disconnectWorkspace,
@@ -57,6 +64,16 @@ const contentRoot = ref('src/content')
 const host = ref('https://gitlab.com')
 const autoPush = ref(true)
 const pushOpen = ref(false)
+const openRoles = ref(true)
+const openFolder = ref(false)
+const openRemote = ref(true)
+const openCopy = ref(true)
+const { bundle: copyBundle } = usePushCopy()
+const firstSuccess = ref('')
+const firstHintText = ref('')
+const copyLines = ref('')
+const copyMessage = ref('')
+const copyWorking = ref(false)
 
 watch(repoInput, (value) => {
   const detected = detectProviderFromRepo(value)
@@ -110,6 +127,7 @@ async function connect() {
   try {
     await authorizeWorkspace()
     await hydrateRemoteGit()
+    await hydratePushCopy()
     message.value = t.value('settingsOk')
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') return
@@ -125,6 +143,7 @@ async function reconnect() {
   try {
     await reconnectWorkspace()
     await hydrateRemoteGit()
+    await hydratePushCopy()
     message.value = t.value('settingsOk')
   } catch {
     message.value = t.value('settingsFail')
@@ -185,6 +204,39 @@ async function toggleAutoPush() {
   if (remoteReady.value) await updateRemoteOptions({ autoPush: autoPush.value })
 }
 
+async function saveCopy() {
+  copyWorking.value = true
+  copyMessage.value = ''
+  try {
+    const next: PushCopyBundle = {
+      ...copyBundle.value,
+      [locale.value]: {
+        firstSuccess: firstSuccess.value,
+        firstHint: firstHintText.value,
+        lines: copyLines.value.split('\n'),
+      },
+    }
+    await savePushCopy(next)
+    copyMessage.value = t.value('copySaved')
+  } catch (err) {
+    const code = err instanceof Error ? err.message : ''
+    copyMessage.value = code === 'NOT_READY' ? t.value('copyNeedFolder') : code || t.value('settingsFail')
+  } finally {
+    copyWorking.value = false
+  }
+}
+
+watch(
+  [locale, copyBundle],
+  () => {
+    const pack = copyBundle.value[locale.value]
+    firstSuccess.value = pack.firstSuccess
+    firstHintText.value = pack.firstHint
+    copyLines.value = pack.lines.join('\n')
+  },
+  { immediate: true },
+)
+
 function tokenHelpHref() {
   return providers[provider.value].tokenHelp
 }
@@ -197,10 +249,7 @@ function tokenHelpHref() {
       <p class="mt-2 text-sm leading-6 text-muted-foreground">{{ t('settingsHint') }}</p>
       <div class="mt-3 h-px w-full bg-border" />
 
-      <section id="roles" class="mt-8">
-        <h2 class="text-sm font-semibold">{{ t('rolesTitle') }}</h2>
-        <p class="mt-2 text-sm leading-6 text-muted-foreground">{{ t('rolesHint') }}</p>
-
+      <SettingsPanel id="roles" v-model:open="openRoles" :title="t('rolesTitle')" :hint="t('rolesHint')">
         <div class="mt-4 grid gap-3 sm:grid-cols-2">
           <button
             v-for="role in ROLES"
@@ -251,11 +300,9 @@ function tokenHelpHref() {
           </ul>
           <p class="mt-3 text-xs leading-5 text-muted-foreground">{{ t('writableNote') }}</p>
         </div>
-      </section>
+      </SettingsPanel>
 
-      <section class="mt-8 rounded-xl border bg-card p-5">
-        <h2 class="text-sm font-semibold">{{ t('settingsFolder') }}</h2>
-        <p class="mt-2 text-sm leading-6 text-muted-foreground">{{ t('settingsFolderHint') }}</p>
+      <SettingsPanel v-model:open="openFolder" :title="t('settingsFolder')" :hint="t('settingsFolderHint')">
 
         <p class="mt-4 text-sm">
           <span class="text-muted-foreground">{{ t('settingsStatus') }}：</span>
@@ -289,11 +336,9 @@ function tokenHelpHref() {
           </Button>
         </div>
         <p v-if="message" class="mt-3 text-sm text-muted-foreground">{{ message }}</p>
-      </section>
+      </SettingsPanel>
 
-      <section id="remote" class="mt-8 rounded-xl border bg-card p-5">
-        <h2 class="text-sm font-semibold">{{ t('remoteTitle') }}</h2>
-        <p class="mt-2 text-sm leading-6 text-muted-foreground">{{ t('remoteHint') }}</p>
+      <SettingsPanel id="remote" v-model:open="openRemote" :title="t('remoteTitle')" :hint="t('remoteHint')">
 
         <p class="mt-4 text-sm">
           <span class="text-muted-foreground">{{ t('remoteStatus') }}：</span>
@@ -387,7 +432,30 @@ function tokenHelpHref() {
           </Button>
         </div>
         <p v-if="remoteMessage" class="mt-3 text-sm text-muted-foreground">{{ remoteMessage }}</p>
-      </section>
+      </SettingsPanel>
+
+      <SettingsPanel id="copy" v-model:open="openCopy" :title="t('copyTitle')" :hint="t('copyHint')">
+        <label class="mt-4 block text-xs text-muted-foreground">{{ t('copyFirst') }}</label>
+        <Input v-model="firstSuccess" class="mt-1.5" autocomplete="off" />
+
+        <label class="mt-4 block text-xs text-muted-foreground">{{ t('copyFirstHintLabel') }}</label>
+        <textarea
+          v-model="firstHintText"
+          class="mt-1.5 min-h-16 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
+
+        <label class="mt-4 block text-xs text-muted-foreground">{{ t('copyLines') }}</label>
+        <p class="mt-1 text-xs text-muted-foreground">{{ t('copyLinesHint') }}</p>
+        <textarea
+          v-model="copyLines"
+          class="mt-1.5 min-h-40 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
+
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <Button size="sm" :disabled="copyWorking" @click="saveCopy">{{ t('copySave') }}</Button>
+          <p v-if="copyMessage" class="text-sm text-muted-foreground">{{ copyMessage }}</p>
+        </div>
+      </SettingsPanel>
     </article>
     <RemotePushDialog :open="pushOpen" @close="pushOpen = false" />
   </div>
