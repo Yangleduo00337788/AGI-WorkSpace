@@ -2,10 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { ChevronRight, FileText, LayoutGrid } from 'lucide-vue-next'
-import { navTree } from '@/lib/content'
+import { docsNavTree } from '@/lib/content'
 import NavTree from '@/components/NavTree.vue'
 import { useI18n } from '@/composables/useI18n'
-import { SPACE_NAV_ITEMS, spaceHash } from '@/lib/space-nav'
+import { SPACE_NAV_ITEMS, activeSpaceItem, isSpacePath } from '@/lib/space-nav'
 import { cn } from '@/lib/utils'
 
 defineProps<{
@@ -19,8 +19,8 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const route = useRoute()
 const spaceOpen = ref(false)
-const onSpace = computed(() => route.path === '/settings')
-const activeSpace = computed(() => (onSpace.value ? spaceHash(route.hash) : ''))
+const onSpace = computed(() => isSpacePath(route.path))
+const activeId = computed(() => activeSpaceItem(route.path))
 
 watch(
   onSpace,
@@ -56,7 +56,7 @@ function onSpaceTitleClick(event: MouseEvent) {
       {{ title }}
     </div>
     <nav class="flex-1 overflow-y-auto px-6 pr-8 pb-8 scrollbar-thin">
-      <NavTree :nodes="navTree" @navigate="emit('navigate')" />
+      <NavTree :nodes="docsNavTree" @navigate="emit('navigate')" />
       <div class="mt-0.5 flex flex-col">
         <div class="flex items-center">
           <button
@@ -72,7 +72,7 @@ function onSpaceTitleClick(event: MouseEvent) {
             />
           </button>
           <RouterLink
-            to="/settings#roles"
+            to="/settings"
             :class="
               cn(
                 'flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] leading-5 transition-colors',
@@ -96,11 +96,11 @@ function onSpaceTitleClick(event: MouseEvent) {
               <ul class="flex flex-col gap-0.5" style="padding-left: 0.7rem">
                 <li v-for="item in SPACE_NAV_ITEMS" :key="item.id">
                   <RouterLink
-                    :to="`/settings#${item.id}`"
+                    :to="item.to"
                     :class="
                       cn(
                         'ml-7 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] leading-5 transition-colors',
-                        activeSpace === item.id
+                        activeId === item.id
                           ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
                           : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
                       )

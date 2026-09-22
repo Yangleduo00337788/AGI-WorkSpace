@@ -26,7 +26,6 @@ import {
   usePushCopy,
   type PushCopyBundle,
 } from '@/lib/push-copy'
-import { spaceHash } from '@/lib/space-nav'
 import {
   authorizeWorkspace,
   disconnectWorkspace,
@@ -243,7 +242,8 @@ watch(
   () => [route.path, route.hash] as const,
   async () => {
     if (route.path !== '/settings') return
-    const id = spaceHash(route.hash)
+    const id = route.hash.replace(/^#/, '')
+    if (!id) return
     openRoles.value = id === 'roles'
     openFolder.value = id === 'folder'
     openRemote.value = id === 'remote'

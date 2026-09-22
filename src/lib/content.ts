@@ -215,7 +215,8 @@ function buildNav(): NavNode[] {
 }
 
 export const navTree = buildNav()
-export const orderedDocs = flattenNav(navTree)
+export const docsNavTree = navTree.filter((node) => node.id !== 'space')
+export const orderedDocs = flattenNav(docsNavTree)
 
 export function slugFromPath(path: string): string {
   return path.replace(/^\/+|\/+$/g, '')

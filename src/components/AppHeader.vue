@@ -28,7 +28,7 @@ const { t } = useI18n()
     <div class="ml-auto flex shrink-0 items-center gap-1.5">
       <DocSearch />
       <RouterLink
-        to="/settings#roles"
+        to="/settings"
         class="hidden size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:inline-flex"
         :aria-label="t('settingsNav')"
         :title="t('settingsNav')"

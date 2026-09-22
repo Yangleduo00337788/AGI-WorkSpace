@@ -11,6 +11,7 @@ import {
   reconnectWorkspace,
   serializeMarkdown,
   useWorkspaceFs,
+  writeRepoFile,
   writeWorkspaceFile,
 } from '@/lib/workspace-fs'
 import { pushWorkspaceFile, useRemoteGit } from '@/lib/remote-git'
@@ -38,6 +39,7 @@ const doc = computed(() => {
 const neighbors = computed(() => getNeighbors(slug.value))
 const canEdit = computed(() => {
   if (!selected.value.length || !doc.value) return false
+  if (doc.value.segments[0] === 'space') return true
   return isOwnedSlug(doc.value.slug, ownedSlugs.value)
 })
 
@@ -77,6 +79,9 @@ async function saveEdit() {
     draft.value = body
     const fileText = serializeMarkdown(current, body)
     await writeWorkspaceFile(current.relPath, fileText)
+    if (current.slug === 'space/harness/AGENT') {
+      await writeRepoFile('AGENT.md', `${body.replace(/^\n+/, '')}\n`)
+    }
     await saveDocOverride(current.slug, body)
     const updated = getDoc(current.slug)
     if (updated) reindexDoc(updated)
