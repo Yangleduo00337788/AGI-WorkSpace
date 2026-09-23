@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, ArrowRight } from 'lucide-vue-next'
 import DocToc from '@/components/DocToc.vue'
 import DocChildren from '@/components/DocChildren.vue'
+import DocHomeNav from '@/components/DocHomeNav.vue'
 import { useI18n } from '@/composables/useI18n'
 import { catalog, docDir, getDoc, getNeighbors, isProtectedDoc, slugFromPath } from '@/lib/content'
 import { canCreateIn, createWorkspaceDoc } from '@/lib/doc-manage'
@@ -350,6 +351,8 @@ onUnmounted(() => {
           <p v-if="saveMessage" class="mt-2 text-xs text-muted-foreground">{{ saveMessage }}</p>
           <div class="mt-3 h-px w-full bg-border" />
 
+          <DocHomeNav v-if="!slug && !editing" />
+
           <DocVisualEditor
             v-if="editing"
             ref="visualEditor"
@@ -370,7 +373,7 @@ onUnmounted(() => {
             <div class="h-4 w-2/3 animate-pulse rounded bg-muted" />
           </div>
 
-          <DocChildren v-if="doc.isIndex && !editing" :slug="slug" />
+          <DocChildren v-if="slug && doc.isIndex && !editing" :slug="slug" />
 
           <div class="mt-16 grid gap-4 border-t pt-8 sm:grid-cols-2">
             <RouterLink

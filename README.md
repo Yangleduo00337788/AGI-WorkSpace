@@ -22,7 +22,7 @@ npm run preview
 
 ## 内容
 
-- 文件夹 = 左侧分类（项目 / 产品 / 设计 / 研发 / 质量 / 交付 / 记录）
+- 文件夹 = 左侧分类（开始阅读 / 项目 / 产品 / 设计 / 研发 / 质量 / 交付 / 记录）
 - `.md` = 一篇文档
 - `index.md` 是该分类的入口
 - Frontmatter：`title`、`order`、`description`

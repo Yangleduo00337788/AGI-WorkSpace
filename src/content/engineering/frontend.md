@@ -53,8 +53,9 @@ FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/ha
 
 | 组件 | 入参 | 事件 | 对应设计 |
 | --- | --- | --- | --- |
-| `NavTree` | 导航节点 | 展开 / 跳转 | 左侧目录 |
+| `NavTree` | 导航节点 | 展开 / 跳转 | 左侧目录；首页「开始阅读」复用同一棵树 |
 | `DocVisualEditor` | Markdown、文档目录 | 保存、贴图 | 预览内编辑 |
+| `DocHomeNav` | — | — | 项目首页目录，层级与侧栏相同 |
 | `DocChildren` | 当前 slug | — | 目录页列出子目录 / 文档 |
 | `DocCreateDialog` | 父级 slug | 创建 | 按角色新建 MD |
 

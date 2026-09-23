@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils'
 const props = defineProps<{
   nodes: NavNode[]
   depth?: number
+  showActions?: boolean
+  initiallyOpen?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -24,6 +26,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const route = useRoute()
 const depth = computed(() => props.depth ?? 0)
+const showActions = computed(() => props.showActions !== false)
 const openIds = ref<Set<string>>(new Set())
 const { selected, ownedSlugs } = useRoles()
 
@@ -102,9 +105,10 @@ function onFolderTitleClick(event: MouseEvent, node: NavNode) {
 }
 
 watch(
-  () => route.fullPath,
+  () => [route.fullPath, props.initiallyOpen, props.nodes] as const,
   () => {
     const next = new Set(openIds.value)
+    for (const id of props.initiallyOpen ?? []) next.add(id)
     const walk = (nodes: NavNode[]) => {
       for (const node of nodes) {
         if (isFolderNode(node) && isAncestor(node)) next.add(node.id)
@@ -171,7 +175,7 @@ watch(
             <span class="truncate">{{ node.title }}</span>
           </button>
           <div
-            v-if="canEditNode(node) || createParent(node)"
+            v-if="showActions && (canEditNode(node) || createParent(node))"
             class="flex shrink-0 pr-0.5 opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100"
             :class="isActive(node.slug) ? 'opacity-100' : ''"
           >
@@ -206,6 +210,8 @@ watch(
               <NavTree
                 :nodes="node.children ?? []"
                 :depth="depth + 1"
+                :show-actions="showActions"
+                :initially-open="initiallyOpen"
                 @navigate="emit('navigate')"
                 @create="emit('create', $event)"
                 @edit="emit('edit', $event)"
@@ -241,7 +247,7 @@ watch(
           <span class="truncate">{{ node.title }}</span>
         </RouterLink>
         <div
-          v-if="canEditNode(node) || createParent(node)"
+          v-if="showActions && (canEditNode(node) || createParent(node))"
           class="flex shrink-0 pr-0.5 opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100"
           :class="isActive(node.slug) ? 'opacity-100' : ''"
         >

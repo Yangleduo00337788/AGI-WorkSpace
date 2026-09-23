@@ -7,7 +7,7 @@ order: 0
 这是一个 **项目开发工作空间模版**。Vue 只是文档壳子；左侧分类对应 Markdown，用来沉淀给团队和 AI Agent 的上下文。
 
 > [!TIP]
-> 把占位换成当前项目即可。不要为每篇文档新建 Vue 页面。先在 [配置中心](/settings) 勾选角色并授权本地目录。
+> 把占位换成当前项目即可。不要为每篇文档新建 Vue 页面。先在 [配置中心](/settings) 勾选角色并授权本地目录。然后从下方「开始阅读」进入，目录层级与左侧相同。
 
 ## 项目是什么
 
@@ -15,6 +15,8 @@ order: 0
 - **一句话：** 按七个角色组织的项目知识模版，可在预览里修改并写回 `src/content/`
 - **当前阶段：** 模版可用 / 立项 / 设计 / 研发 / 测试 / 上线 / 维护
 - **仓库与环境：** （Git 地址、预览环境、生产环境）
+
+完整说明见 [项目介绍文档](/start/project-intro)。工作空间思路见 [AGI-WorkSpace 新范式](/start/paradigm)。操作步骤见 [WorkSpace 指南](/start/guide)。
 
 ## 七个角色是否都有文档
 
@@ -29,17 +31,6 @@ order: 0
 | POM 项目与交付 | [角色](/project/roles) · [状态](/project/status) · [计划](/delivery/management) · [决策](/records/decisions) | 模版已齐 |
 
 对照表详见 [项目角色](/project/roles)。
-
-## 先读这些
-
-1. [配置中心](/settings) — 勾选角色，授权本机工作目录，绑定代码空间
-2. [项目引用](/space/references) — 这份空间引用哪些项目事实
-3. [Harness / AGENT.md](/space/harness/AGENT) — Agent 允许做什么
-4. [项目角色](/project/roles) — 七角色与可写目录
-5. [项目概述](/project/overview) — 背景、范围、非目标
-6. [项目目标](/project/goals) — 产品、技术、交付目标
-7. [产品定义](/product/definition) — 定位与边界
-8. [技术架构](/engineering/architecture) — 怎么做、约束是什么
 
 ## 使用约定
 

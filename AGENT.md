@@ -41,6 +41,7 @@ AGI-WorkSpace/
 ├── src/
 │   ├── content/                      ← 文档树（会出现在侧栏「文档」）
 │   │   ├── index.md                  ← 项目首页
+│   │   ├── start/                    ← 开始阅读
 │   │   ├── project/ product/ design/
 │   │   ├── engineering/ quality/
 │   │   ├── delivery/ records/
@@ -62,6 +63,7 @@ AGI-WorkSpace/
 **文档（`catalog.docsNavTree`）**
 
 - 项目首页
+- 开始阅读（项目介绍、新范式、WorkSpace 指南）
 - 项目 / 产品 / 设计 / 研发 / 质量 / 交付 / 记录
 
 **空间配置（侧栏单独一组，不进文档树）**
@@ -80,11 +82,11 @@ AGI-WorkSpace/
 | --- | --- | --- |
 | `rd` | RD | `engineering`、architecture / conventions / contracts / domain / collab（`engineering/frontend` 归 FE） |
 | `fe` | FE | `engineering/frontend` |
-| `pm` | PM | `product`、`product/*`、`project/overview`、`project/goals` |
+| `pm` | PM | `product`、`product/*`、`project/overview`、`project/goals`、`start/project-intro` |
 | `qa` | QA | `quality`、`quality/*` |
 | `op` | OP | `delivery/ops` |
 | `uiue` | UIUE | `design`、`design/*` |
-| `pom` | POM | `delivery`、`delivery/management`、`project/roles`、`project/status`、`records`、`records/*` |
+| `pom` | POM | `delivery`、`delivery/management`、`project/roles`、`project/status`、`records`、`records/*`、`start` |
 
 额外规则：
 
