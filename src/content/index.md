@@ -7,7 +7,7 @@ order: 0
 这是一个 **项目开发工作空间模版**。Vue 只是文档壳子；左侧分类对应 Markdown，用来沉淀给团队和 AI Agent 的上下文。
 
 > [!TIP]
-> 把占位换成当前项目即可。不要为每篇文档新建 Vue 页面。先在 [系统配置](/settings) 勾选角色并授权本地目录。
+> 把占位换成当前项目即可。不要为每篇文档新建 Vue 页面。先在 [配置中心](/settings) 勾选角色并授权本地目录。
 
 ## 项目是什么
 
@@ -32,12 +32,14 @@ order: 0
 
 ## 先读这些
 
-1. [系统配置](/settings) — 勾选角色，授权本机工作目录
-2. [项目角色](/project/roles) — 七角色与可写目录
-3. [项目概述](/project/overview) — 背景、范围、非目标
-4. [项目目标](/project/goals) — 产品、技术、交付目标
-5. [产品定义](/product/definition) — 定位与边界
-6. [技术架构](/engineering/architecture) — 怎么做、约束是什么
+1. [配置中心](/settings) — 勾选角色，授权本机工作目录，绑定代码空间
+2. [项目引用](/space/references) — 这份空间引用哪些项目事实
+3. [Harness / AGENT.md](/space/harness/AGENT) — Agent 允许做什么
+4. [项目角色](/project/roles) — 七角色与可写目录
+5. [项目概述](/project/overview) — 背景、范围、非目标
+6. [项目目标](/project/goals) — 产品、技术、交付目标
+7. [产品定义](/product/definition) — 定位与边界
+8. [技术架构](/engineering/architecture) — 怎么做、约束是什么
 
 ## 使用约定
 

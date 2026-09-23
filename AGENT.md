@@ -50,7 +50,7 @@ AGI-WorkSpace/
 │   │           ├── index.md          ← Harness 管理入口
 │   │           └── AGENT.md          ← 本文件的带 frontmatter 版本
 │   ├── lib/roles.ts                  ← 七角色 ID 与可写 slug，禁止删 ID
-│   ├── lib/content.ts                ← MD 加载；`docsNavTree` 排除 `space`
+│   ├── lib/content.ts                ← MD 加载；`catalog.docsNavTree` 排除 `space`
 │   ├── lib/git-sync.ts               ← 按 .gitignore 整仓 commit/push
 │   ├── views/SettingsView.vue        ← 配置中心（四块设置）
 │   └── views/DocView.vue             ← 唯一文档页
@@ -59,7 +59,7 @@ AGI-WorkSpace/
 
 ## 4. 信息架构（侧栏）
 
-**文档（`docsNavTree`）**
+**文档（`catalog.docsNavTree`）**
 
 - 项目首页
 - 项目 / 产品 / 设计 / 研发 / 质量 / 交付 / 记录
@@ -70,7 +70,7 @@ AGI-WorkSpace/
 2. **项目引用** `/space/references`
 3. **Harness 管理** `/space/harness` → 主要维护 `AGENT.md`
 
-禁止把 `src/content/space/` 做进「文档」导航。`src/lib/content.ts` 里必须保持 `docsNavTree` 过滤 `id === 'space'`。
+禁止把 `src/content/space/` 做进「文档」导航。`src/lib/content.ts` 里必须保持 `catalog.docsNavTree` 过滤 `id === 'space'`。授权本地工作目录后，导航以磁盘上的 Markdown 为准（窗口重新聚焦会再扫一遍），不要只依赖构建时打包的文件。
 
 ## 5. 七个角色（ID 锁定）
 
@@ -109,6 +109,8 @@ order: 10
 - 业务上下文写在 Markdown，不要堆在 Vue 注释里。
 - 接口 / 领域 / 决策变更当天同步对应 MD。
 - **禁止**为单篇文档增加 `views/*.vue` 或新路由组件；一律走 `DocView` + `/:slug(.*)`。
+- 有角色权限且已授权目录时：可在应用内新建 / 删除 Markdown（根目录 `index.md` 不可删）。
+- 编辑器粘贴的图片写到该文档目录下的 `assets/`，用相对路径引用。
 
 保存 AGENT.md（slug `space/harness/AGENT`）时：必须同步仓库根目录 `AGENT.md`（无 YAML frontmatter，仅正文）。应用内 `DocView` 已按此处理；若你用编辑器直接改，两份正文必须一致。
 
@@ -167,7 +169,7 @@ npm run build
 | --- | --- |
 | 改某篇项目文档 | 改对应 `src/content/**/*.md`，保留 frontmatter |
 | 换项目 | 改概述/目标/状态/角色对接人/本文件「当前值」表，不改壳子结构 |
-| 加一篇文档 | 新 md + frontmatter；若新分类则加文件夹和 index.md |
+| 加一篇文档 | 优先在应用内按角色新建；或新 md + frontmatter；若新分类则加文件夹和 index.md |
 | 改侧栏空间配置 | `AppSidebar` + `space-nav.ts` + 对应 view/md |
 | 改推送成功文案 | `src/config/push-success.json` 或配置中心「推送成功文案」 |
 | 改角色可写范围 | 同时改 `src/lib/roles.ts` 与 `src/content/project/roles.md` |

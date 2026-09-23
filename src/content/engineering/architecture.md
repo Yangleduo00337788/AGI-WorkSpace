@@ -20,20 +20,24 @@ RD 维护。改栈、改模块边界先改本页，再改代码。
 ## 模块
 
 ```text
-src/content/           项目知识（角色文档都在这里）
-src/lib/content.ts     扫描 MD、生成导航
-src/lib/markdown.ts    渲染
-src/lib/roles.ts       七个角色与可写范围
-src/lib/workspace-fs.ts 授权目录并写回文件
-src/views/DocView.vue  通用文档页（不要为每篇 MD 新建 Vue 页）
+src/content/              项目知识（角色文档都在这里）
+src/lib/content.ts        解析 MD、生成导航（`catalog.docsNavTree` 排除 space）
+src/lib/catalog-sync.ts   授权目录后按磁盘扫描并刷新侧栏
+src/lib/markdown.ts       渲染
+src/lib/roles.ts          七个角色与可写范围
+src/lib/workspace-fs.ts   授权目录、写回 MD / 图片
+src/lib/git-sync.ts       按 .gitignore 整仓 commit/push
+src/views/DocView.vue     通用文档页（不要为每篇 MD 新建 Vue 页）
+src/views/SettingsView.vue 配置中心
 ```
 
 ## 数据流
 
-1. 作者在 `src/content/` 写 Markdown（或在预览里编辑后写回文件）
-2. 开发 / 构建时 glob 收集并解析 frontmatter
-3. 导航树、搜索、上一篇 / 下一篇共用同一份文档列表
-4. 保存时：校验角色范围 → 写入本地 `src/content/*.md`
+1. 未授权时：构建打包的 `src/content/**/*.md` 作为初始目录
+2. 授权工作目录后：扫描磁盘 Markdown，侧栏、搜索与磁盘一致
+3. 预览里编辑 → 校验角色范围 → 写回本地文件；图片写入该文档下 `assets/`
+4. 按角色可新建 / 删除 `.md`（根目录 `index.md` 除外）
+5. 绑定代码空间后：按 `.gitignore` 提交并推送整个仓库
 
 ## 质量属性
 

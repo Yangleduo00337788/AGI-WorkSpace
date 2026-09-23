@@ -1,14 +1,14 @@
 ---
 title: 项目角色
-description: 与系统配置一致的七个角色、职责与目录
+description: 与配置中心一致的七个角色、职责与目录
 order: 3
 ---
 
-先在 [系统配置](/settings#roles) 勾选角色。可维护范围是所选角色负责目录的并集，其它空间仍可阅读。
+先在 [配置中心](/settings#roles) 勾选角色。可维护范围是所选角色负责目录的并集，其它空间仍可阅读。
 
-本模版固定七个角色，与系统配置一一对应。换项目时只改对接人，不要改角色 ID。
+本模版固定七个角色，与配置中心一一对应。换项目时只改对接人，不要改角色 ID。
 
-| 角色 | 系统配置 | 职责 | 对接人 |
+| 角色 | 配置中心 | 职责 | 对接人 |
 | --- | --- | --- | --- |
 | 研发设计 | RD | 技术方案、领域模型、接口契约、工程规范、研发协作记录 |  |
 | 前端研发 | FE | 前端结构、交互状态、组件契约、无障碍 |  |
@@ -28,7 +28,7 @@ order: 3
 | QA | [质量](/quality)、[测试与质量](/quality/testing)、[测试用例](/quality/cases)、[执行证据](/quality/evidence)、[缺陷记录](/quality/defects) |
 | OP | [运维与交付](/delivery/ops) |
 | UIUE | [设计](/design)、[设计与体验](/design/experience)、[视觉规范](/design/specs)、[设计交付](/design/handoff) |
-| POM | [项目角色](/project/roles)、[项目状态](/project/status)、[项目管理](/delivery/management)、[记录](/records)、[项目决策](/records/decisions) |
+| POM | [项目](/project)、[项目角色](/project/roles)、[项目状态](/project/status)、[交付](/delivery)、[项目管理](/delivery/management)、[记录](/records)、[项目决策](/records/decisions) |
 
 ## 协作约定
 
