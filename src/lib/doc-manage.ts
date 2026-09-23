@@ -1,6 +1,6 @@
 import type { NavNode } from '@/lib/content'
 import { getDoc, isFolderNode } from '@/lib/content'
-import { isOwnedSlug, type RoleId } from '@/lib/roles'
+import { isOwnedSlug, isSharedWritableSlug, type RoleId } from '@/lib/roles'
 import { syncCatalogFromDisk } from '@/lib/catalog-sync'
 import {
   reconnectWorkspace,
@@ -14,18 +14,20 @@ export function canEditSlug(slug: string, selected: RoleId[], owned: Set<string>
   if (!selected.length) return false
   const doc = getDoc(slug)
   if (!doc) return false
-  if (doc.segments[0] === 'space') return true
+  if (doc.segments[0] === 'space' || isSharedWritableSlug(doc.slug)) return true
   return isOwnedSlug(doc.slug, owned)
 }
 
 export function canCreateIn(parentSlug: string, selected: RoleId[], owned: Set<string>) {
   if (!selected.length || !parentSlug) return false
   if (parentSlug === 'space' || parentSlug.startsWith('space/')) return true
+  if (isSharedWritableSlug(parentSlug)) return true
   return isOwnedSlug(`${parentSlug}/__new__`, owned)
 }
 
 export function createParentForNode(node: NavNode, selected: RoleId[], owned: Set<string>) {
-  if (node.slug === undefined || node.slug === '') return ''
+  if (node.slug === undefined) return ''
+  if (node.slug === '') return canCreateIn('start', selected, owned) ? 'start' : ''
   if (isFolderNode(node) && canCreateIn(node.slug, selected, owned)) return node.slug
   if (!isFolderNode(node)) {
     if (canCreateIn(node.slug, selected, owned)) return node.slug

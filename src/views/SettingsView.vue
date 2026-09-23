@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { useI18n } from '@/composables/useI18n'
 import { useRoles } from '@/composables/useRoles'
 import { catalog, docsBySlug } from '@/lib/content'
-import { ROLES, type RoleId } from '@/lib/roles'
+import { isSharedWritableSlug, ROLES, type RoleId } from '@/lib/roles'
 import { cn } from '@/lib/utils'
 import {
   bindRemoteGit,
@@ -97,7 +97,13 @@ watch(
 
 const writableDocs = computed(() => {
   void catalog.revision
-  const list = [...ownedSlugs.value]
+  const keys = new Set([...ownedSlugs.value])
+  if (selected.value.length) {
+    for (const doc of catalog.docs) {
+      if (isSharedWritableSlug(doc.slug)) keys.add(doc.slug)
+    }
+  }
+  const list = [...keys]
     .map((slug) => docsBySlug.get(slug))
     .filter((doc): doc is NonNullable<typeof doc> => Boolean(doc))
   const seen = new Set<string>()

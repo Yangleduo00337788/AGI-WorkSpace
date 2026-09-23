@@ -37,7 +37,7 @@ export const ROLES: RoleDef[] = [
     titleEn: 'Product',
     descZh: '用户场景、PRD、业务流程、思维导图、交互原型、排期图与验收标准',
     descEn: 'Scenarios, PRD, flows, prototypes, schedule, and acceptance',
-    slugs: ['product', 'product/definition', 'product/users', 'product/prd', 'product/prototypes', 'project/overview', 'project/goals', 'start/project-intro'],
+    slugs: ['product', 'product/definition', 'product/users', 'product/prd', 'product/prototypes', 'project/overview', 'project/goals'],
   },
   {
     id: 'qa',
@@ -73,7 +73,7 @@ export const ROLES: RoleDef[] = [
     titleEn: 'Program',
     descZh: '里程碑、依赖、风险、进度和跨角色交接',
     descEn: 'Milestones, dependencies, risks, progress, and handoff',
-    slugs: ['delivery', 'delivery/management', 'project/roles', 'project/status', 'records', 'records/decisions', 'start'],
+    slugs: ['delivery', 'delivery/management', 'project/roles', 'project/status', 'records', 'records/decisions'],
   },
 ]
 
@@ -86,8 +86,13 @@ export function slugsForRoles(ids: RoleId[]): Set<string> {
   return next
 }
 
+export function isSharedWritableSlug(slug: string): boolean {
+  if (!slug) return true
+  return slug === 'start' || slug.startsWith('start/')
+}
+
 export function isOwnedSlug(slug: string, owned: Set<string>): boolean {
-  if (!slug) return false
+  if (isSharedWritableSlug(slug)) return true
   if (owned.has(slug)) return true
   for (const item of owned) {
     if (slug.startsWith(`${item}/`) || item.startsWith(`${slug}/`)) return true

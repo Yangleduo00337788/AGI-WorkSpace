@@ -81,15 +81,16 @@ AGI-WorkSpace/
 | --- | --- | --- |
 | `rd` | RD | `engineering`、architecture / conventions / contracts / domain / collab（`engineering/frontend` 归 FE） |
 | `fe` | FE | `engineering/frontend` |
-| `pm` | PM | `product`、`product/*`、`project/overview`、`project/goals`、`start/project-intro` |
+| `pm` | PM | `product`、`product/*`、`project/overview`、`project/goals` |
 | `qa` | QA | `quality`、`quality/*` |
 | `op` | OP | `delivery/ops` |
 | `uiue` | UIUE | `design`、`design/*` |
-| `pom` | POM | `delivery`、`delivery/management`、`project/roles`、`project/status`、`records`、`records/*`、`start` |
+| `pom` | POM | `delivery`、`delivery/management`、`project/roles`、`project/status`、`records`、`records/*` |
 
 额外规则：
 
 - `src/content/space/**`：只要用户在配置中心勾选了任意角色，即可在应用内编辑。
+- `src/content/start/**` 与根目录 `index.md`（项目首页）：任意已选角色可读可改。
 - 不要擅自把某篇文档的 slug 加进另一个角色，除非用户明确要求。
 - 不要新增第八个角色，除非用户明确要求并同时改 `roles.ts`、配置中心文案、`project/roles.md`。
 

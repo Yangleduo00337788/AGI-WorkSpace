@@ -24,11 +24,13 @@ order: 3
 | --- | --- |
 | RD | [研发](/engineering)、[技术架构](/engineering/architecture)、[工程规范](/engineering/conventions)、[接口契约](/engineering/contracts)、[领域设计](/engineering/domain)、[研发协作](/engineering/collab) |
 | FE | [前端结构](/engineering/frontend) |
-| PM | [产品](/product)、[产品定义](/product/definition)、[用户与需求](/product/users)、[产品需求](/product/prd)、[原型与排期](/product/prototypes)、[项目概述](/project/overview)、[项目目标](/project/goals)、[项目介绍文档](/start/project-intro) |
+| PM | [产品](/product)、[产品定义](/product/definition)、[用户与需求](/product/users)、[产品需求](/product/prd)、[原型与排期](/product/prototypes)、[项目概述](/project/overview)、[项目目标](/project/goals) |
 | QA | [质量](/quality)、[测试与质量](/quality/testing)、[测试用例](/quality/cases)、[执行证据](/quality/evidence)、[缺陷记录](/quality/defects) |
 | OP | [运维与交付](/delivery/ops) |
 | UIUE | [设计](/design)、[设计与体验](/design/experience)、[视觉规范](/design/specs)、[设计交付](/design/handoff) |
-| POM | [项目](/project)、[项目角色](/project/roles)、[项目状态](/project/status)、[交付](/delivery)、[项目管理](/delivery/management)、[记录](/records)、[项目决策](/records/decisions)、[开始阅读](/start) |
+| POM | [项目](/project)、[项目角色](/project/roles)、[项目状态](/project/status)、[交付](/delivery)、[项目管理](/delivery/management)、[记录](/records)、[项目决策](/records/decisions) |
+
+**共用：** [开始阅读](/start)（含 [项目首页](/)）任意已勾选角色可读可改，不绑在某一个角色上。
 
 ## 协作约定
 

@@ -8,7 +8,7 @@ import DocChildren from '@/components/DocChildren.vue'
 import DocHomeNav from '@/components/DocHomeNav.vue'
 import { useI18n } from '@/composables/useI18n'
 import { catalog, docDir, getDoc, getNeighbors, isProtectedDoc, slugFromPath } from '@/lib/content'
-import { canCreateIn, createWorkspaceDoc } from '@/lib/doc-manage'
+import { canCreateIn, canEditSlug, createWorkspaceDoc } from '@/lib/doc-manage'
 import { pendingEditSlug } from '@/lib/doc-session'
 import { hydrateContentImages } from '@/lib/content-images'
 import { saveDocOverride, removeDocOverride, docOverrides } from '@/lib/doc-store'
@@ -27,7 +27,6 @@ import DocVisualEditor from '@/components/DocVisualEditor.vue'
 import DocCreateDialog from '@/components/DocCreateDialog.vue'
 import { Button } from '@/components/ui/button'
 import { useRoles } from '@/composables/useRoles'
-import { isOwnedSlug } from '@/lib/roles'
 import { renderMarkdown, type TocItem } from '@/lib/markdown'
 import { messages } from '@/i18n/messages'
 
@@ -50,14 +49,14 @@ const neighbors = computed(() => {
   return getNeighbors(slug.value)
 })
 const canEdit = computed(() => {
-  if (!selected.value.length || !doc.value) return false
-  if (doc.value.segments[0] === 'space') return true
-  return isOwnedSlug(doc.value.slug, ownedSlugs.value)
+  if (!doc.value) return false
+  return canEditSlug(doc.value.slug, selected.value, ownedSlugs.value)
 })
 const createParent = computed(() => {
   const current = doc.value
-  if (!current || !current.slug) return ''
-  if (current.segments[0] === 'space') {
+  if (!current) return ''
+  if (!current.slug) return 'start'
+  if (current.segments[0] === 'space' || current.segments[0] === 'start') {
     return current.isIndex ? current.slug : docDir(current) || current.slug
   }
   return current.isIndex ? current.slug : current.slug
