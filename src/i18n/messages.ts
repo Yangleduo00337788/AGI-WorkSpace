@@ -33,6 +33,9 @@ export const messages = {
     childrenHint: '文件夹图标是目录，文档图标是可打开的页面。',
     startReading: '开始阅读',
     startReadingHint: '目录层级与左侧相同。项目首页在「开始阅读」里，先读这组入口再展开各角色分类。',
+    homeSlogan: '知识写进仓库，人和 Agent 共用一份上下文',
+    homeIntro:
+      'AGI-WorkSpace 是面向研发项目的工作空间模版：Vue 只提供阅读、编辑和写回的壳，项目事实按七个角色写在 Markdown 里。换项目时改文档，不要为每一篇再做一个页面。',
     folderKind: '目录',
     docKind: '文档',
     rolesNav: '我的角色',
@@ -179,6 +182,9 @@ export const messages = {
     childrenHint: 'Folder icons are directories. File icons are pages.',
     startReading: 'Start reading',
     startReadingHint: 'Same tree as the sidebar. Home lives under Start reading; open that group first, then each role folder.',
+    homeSlogan: 'Knowledge lives in the repo. People and agents read the same source.',
+    homeIntro:
+      'AGI-WorkSpace is a project workspace template: Vue is only the shell for reading, editing, and writing back. Project facts live in Markdown, split by seven roles. Swap the docs for your project — do not add a Vue page per document.',
     folderKind: 'Directories',
     docKind: 'Documents',
     rolesNav: 'My roles',

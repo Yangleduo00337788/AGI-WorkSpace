@@ -6,6 +6,7 @@ import DocToc from '@/components/DocToc.vue'
 import DocStats from '@/components/DocStats.vue'
 import DocChildren from '@/components/DocChildren.vue'
 import DocHomeNav from '@/components/DocHomeNav.vue'
+import DocHomeHero from '@/components/DocHomeHero.vue'
 import { useI18n } from '@/composables/useI18n'
 import { catalog, docDir, getDoc, getNeighbors, isProtectedDoc, slugFromPath } from '@/lib/content'
 import { canCreateIn, canEditSlug, createWorkspaceDoc } from '@/lib/doc-manage'
@@ -322,8 +323,11 @@ onUnmounted(() => {
     <div class="min-w-0 flex-1 px-6 py-8 md:px-10 lg:px-12">
       <Transition name="doc" mode="out-in">
         <article v-if="doc" :key="slug || 'home'" class="mx-auto max-w-3xl">
-          <p v-if="doc.description" class="mb-2 text-sm text-muted-foreground">{{ doc.description }}</p>
-          <h1 class="text-3xl font-semibold tracking-tight text-balance">{{ doc.title }}</h1>
+          <DocHomeHero v-if="!slug && !editing" />
+          <template v-else>
+            <p v-if="doc.description" class="mb-2 text-sm text-muted-foreground">{{ doc.description }}</p>
+            <h1 class="text-3xl font-semibold tracking-tight text-balance">{{ doc.title }}</h1>
+          </template>
           <p v-if="selected.length" class="mt-2 text-xs text-muted-foreground">
             {{ canEdit ? t('ownedBadge') : t('readOnlyBadge') }}
           </p>
@@ -351,8 +355,6 @@ onUnmounted(() => {
           <p v-if="saveMessage" class="mt-2 text-xs text-muted-foreground">{{ saveMessage }}</p>
           <div class="mt-3 h-px w-full bg-border" />
 
-          <DocHomeNav v-if="!slug && !editing" />
-
           <DocVisualEditor
             v-if="editing"
             ref="visualEditor"
@@ -373,6 +375,7 @@ onUnmounted(() => {
             <div class="h-4 w-2/3 animate-pulse rounded bg-muted" />
           </div>
 
+          <DocHomeNav v-if="!slug && !editing" />
           <DocChildren v-if="slug && doc.isIndex && !editing" :slug="slug" />
 
           <div class="mt-16 grid gap-4 border-t pt-8 sm:grid-cols-2">

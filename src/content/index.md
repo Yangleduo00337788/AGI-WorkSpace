@@ -4,19 +4,33 @@ description: 工作空间总览，按七个角色填当前项目
 order: 0
 ---
 
-这是一个 **项目开发工作空间模版**。Vue 只是文档壳子；左侧分类对应 Markdown，用来沉淀给团队和 AI Agent 的上下文。
-
 > [!TIP]
-> 把占位换成当前项目即可。不要为每篇文档新建 Vue 页面。先在 [配置中心](/settings) 勾选角色并授权本地目录。项目首页在左侧「开始阅读」里。
+> 换到真实项目时：改名称、口号和下面的占位，不要为每一篇文档新建 Vue 页面。先到 [配置中心](/settings) 勾选角色并授权本地目录。
 
-## 项目是什么
+## 这是什么
 
-- **名称：** AGI-WorkSpace（换成当前项目名称）
-- **一句话：** 按七个角色组织的项目知识模版，可在预览里修改并写回 `src/content/`
-- **当前阶段：** 模版可用 / 立项 / 设计 / 研发 / 测试 / 上线 / 维护
-- **仓库与环境：** （Git 地址、预览环境、生产环境）
+**AGI-WorkSpace** 把「项目上下文」从聊天记录里拿出来，按七个角色写进仓库里的 Markdown。浏览器只是壳：读、搜、按权限改、写回 `src/content/`。人和 AI Agent 打开同一棵目录。
 
-完整说明见 [项目介绍文档](/start/project-intro)。工作空间思路见 [AGI-WorkSpace 新范式](/start/paradigm)。操作步骤见 [WorkSpace 指南](/start/guide)。
+换项目后，这里应能用三句话回答：项目叫什么、现在做到哪、仓库在哪。更完整的说明在 [项目介绍文档](/start/project-intro)。
+
+| 项 | 当前值（换项目时改） |
+| --- | --- |
+| 名称 | AGI-WorkSpace |
+| Slogan | 知识写进仓库，人和 Agent 共用一份上下文 |
+| 一句话 | 按七个角色组织的项目知识工作空间模版 |
+| 当前阶段 | 模版可用 / 立项 / 设计 / 研发 / 测试 / 上线 / 维护 |
+| 仓库 | （Git 地址） |
+| 预览 | `npm run dev`（建议 Chrome / Edge） |
+| 生产 / 托管 | （若有） |
+
+## 建议怎么读
+
+1. [项目介绍文档](/start/project-intro) — 这个项目是什么、给谁、边界在哪
+2. [AGI-WorkSpace 新范式](/start/paradigm) — 为什么用 Workspace 而不是 CMS 或一页一文档
+3. [WorkSpace 指南](/start/guide) — 怎么勾角色、改文档、授权目录、推送
+4. 再进你负责的分类：项目、产品、设计、研发、质量、交付、记录
+
+页面下方「开始阅读」目录与左侧相同，可逐级展开。
 
 ## 七个角色是否都有文档
 
@@ -30,12 +44,11 @@ order: 0
 | UIUE 视觉与体验 | [体验](/design/experience) · [规范](/design/specs) · [交付](/design/handoff) | 模版已齐 |
 | POM 项目与交付 | [角色](/project/roles) · [状态](/project/status) · [计划](/delivery/management) · [决策](/records/decisions) | 模版已齐 |
 
-对照表详见 [项目角色](/project/roles)。
-
-**开始阅读**（含项目首页）任意已勾选角色都可以读、改。
+对照表见 [项目角色](/project/roles)。**开始阅读**（含本页）只要勾了任意角色就可以读、改。
 
 ## 使用约定
 
-- 文档都在 `src/content/`，每个导航文件夹里都是 `.md`，一篇文档一个主题
-- 用 frontmatter 的 `title`、`order`、`description` 控制侧栏
-- 决策、取舍、事故一律记入 [项目决策](/records/decisions)，不要只留在聊天记录里
+- 文档都在 `src/content/`，一篇文档一个主题；新分类 = 新文件夹 + `index.md`
+- Frontmatter 的 `title`、`order`、`description` 控制侧栏
+- 决策、取舍、事故写入 [项目决策](/records/decisions)，不要只留在聊天里
+- Agent 动手前先读根目录 [AGENT.md](/space/harness/AGENT)
