@@ -2,10 +2,13 @@
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { ChevronRight } from 'lucide-vue-next'
-import { breadcrumbs, slugFromPath } from '@/lib/content'
+import { breadcrumbs, catalog, slugFromPath } from '@/lib/content'
 
 const route = useRoute()
-const crumbs = computed(() => breadcrumbs(slugFromPath(route.path)))
+const crumbs = computed(() => {
+  void catalog.revision
+  return breadcrumbs(slugFromPath(route.path))
+})
 </script>
 
 <template>

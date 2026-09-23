@@ -1,3 +1,4 @@
+import { reactive } from 'vue'
 import { docOverrides } from '@/lib/doc-store'
 
 export interface DocEntry {
@@ -26,13 +27,28 @@ interface Frontmatter {
   order?: number
 }
 
-const files = import.meta.glob('../content/**/*.md', {
+export interface ContentFile {
+  relPath: string
+  raw: string
+}
+
+const bundledFiles = import.meta.glob('../content/**/*.md', {
   query: '?raw',
   import: 'default',
   eager: true,
 }) as Record<string, string>
 
-function parseFrontmatter(raw: string): { data: Frontmatter; content: string } {
+export const catalog = reactive({
+  revision: 0,
+  docs: [] as DocEntry[],
+  navTree: [] as NavNode[],
+  docsNavTree: [] as NavNode[],
+  orderedDocs: [] as DocEntry[],
+})
+
+export const docsBySlug = new Map<string, DocEntry>()
+
+export function parseFrontmatter(raw: string): { data: Frontmatter; content: string } {
   if (!raw.startsWith('---')) {
     return { data: {}, content: raw }
   }
@@ -65,18 +81,15 @@ function parseFrontmatter(raw: string): { data: Frontmatter; content: string } {
   return { data, content }
 }
 
-function contentRelPath(filePath: string): string {
+export function contentRelPath(filePath: string): string {
   const normalized = filePath.replaceAll('\\', '/')
   const marker = '/content/'
   const idx = normalized.lastIndexOf(marker)
   return idx >= 0 ? normalized.slice(idx + marker.length) : normalized.split('/').slice(-1)[0]!
 }
 
-function toSlug(filePath: string): string {
-  const normalized = filePath.replaceAll('\\', '/')
-  const marker = '/content/'
-  const idx = normalized.lastIndexOf(marker)
-  let rel = idx >= 0 ? normalized.slice(idx + marker.length) : normalized
+export function toSlug(relPath: string): string {
+  let rel = relPath.replaceAll('\\', '/').replace(/^\.?\/+/, '')
   rel = rel.replace(/\.md$/, '')
   if (rel.endsWith('/index')) {
     rel = rel.slice(0, -'/index'.length)
@@ -85,8 +98,9 @@ function toSlug(filePath: string): string {
   return rel
 }
 
-function isIndexFile(filePath: string): boolean {
-  return filePath.replaceAll('\\', '/').endsWith('/index.md') || filePath.replaceAll('\\', '/').endsWith('content/index.md')
+function isIndexRel(relPath: string): boolean {
+  const normalized = relPath.replaceAll('\\', '/')
+  return normalized === 'index.md' || normalized.endsWith('/index.md')
 }
 
 function titleFromSegment(segment: string): string {
@@ -125,28 +139,24 @@ function flattenNav(nodes: NavNode[]): DocEntry[] {
   return list
 }
 
-export const docs: DocEntry[] = Object.entries(files)
-  .map(([path, raw]) => {
-    const { data, content } = parseFrontmatter(raw)
-    const slug = toSlug(path)
-    const segments = slug ? slug.split('/') : []
-    const fallback = segments.length ? titleFromSegment(segments[segments.length - 1]!) : 'AGI-WorkSpace'
-    return {
-      slug,
-      title: data.title ?? fallback,
-      description: data.description ?? '',
-      order: data.order ?? 100,
-      content,
-      segments,
-      isIndex: isIndexFile(path) || slug === '',
-      relPath: contentRelPath(path),
-    } satisfies DocEntry
-  })
-  .sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug))
+export function docFromFile(relPath: string, raw: string): DocEntry {
+  const { data, content } = parseFrontmatter(raw)
+  const slug = toSlug(relPath)
+  const segments = slug ? slug.split('/') : []
+  const fallback = segments.length ? titleFromSegment(segments[segments.length - 1]!) : 'AGI-WorkSpace'
+  return {
+    slug,
+    title: data.title ?? fallback,
+    description: data.description ?? '',
+    order: data.order ?? 100,
+    content,
+    segments,
+    isIndex: isIndexRel(relPath) || slug === '',
+    relPath: relPath.replaceAll('\\', '/'),
+  }
+}
 
-export const docsBySlug = new Map(docs.map((doc) => [doc.slug, doc]))
-
-function buildNav(): NavNode[] {
+function buildNav(docs: DocEntry[]): NavNode[] {
   const root: NavNode[] = []
   const folders = new Map<string, NavNode>()
 
@@ -214,9 +224,31 @@ function buildNav(): NavNode[] {
   return sortTree(root)
 }
 
-export const navTree = buildNav()
-export const docsNavTree = navTree.filter((node) => node.id !== 'space')
-export const orderedDocs = flattenNav(docsNavTree)
+export function bundledContentFiles(): ContentFile[] {
+  return Object.entries(bundledFiles).map(([path, raw]) => ({
+    relPath: contentRelPath(path),
+    raw,
+  }))
+}
+
+export function replaceCatalog(files: ContentFile[]) {
+  const docs = files
+    .filter((file) => file.relPath.replaceAll('\\', '/').toLowerCase().endsWith('.md'))
+    .map((file) => docFromFile(file.relPath, file.raw))
+    .sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug))
+
+  docsBySlug.clear()
+  for (const doc of docs) docsBySlug.set(doc.slug, doc)
+
+  const navTree = buildNav(docs)
+  catalog.docs = docs
+  catalog.navTree = navTree
+  catalog.docsNavTree = navTree.filter((node) => node.id !== 'space')
+  catalog.orderedDocs = flattenNav(catalog.docsNavTree)
+  catalog.revision += 1
+}
+
+replaceCatalog(bundledContentFiles())
 
 export function slugFromPath(path: string): string {
   return path.replace(/^\/+|\/+$/g, '')
@@ -237,12 +269,50 @@ export function docDir(doc: DocEntry): string {
   return i === -1 ? '' : doc.slug.slice(0, i)
 }
 
+export function parentSlugOf(doc: DocEntry): string {
+  return docDir(doc)
+}
+
+export function nextOrderInFolder(parentSlug: string): number {
+  const prefix = parentSlug ? `${parentSlug}/` : ''
+  let max = 0
+  for (const doc of catalog.docs) {
+    if (parentSlug) {
+      if (doc.slug === parentSlug) continue
+      if (!doc.slug.startsWith(prefix)) continue
+      const rest = doc.slug.slice(prefix.length)
+      if (rest.includes('/')) continue
+    } else if (doc.segments.length !== 1) {
+      continue
+    }
+    max = Math.max(max, doc.order)
+  }
+  return max + 10
+}
+
+export function fileStemFromTitle(title: string): string {
+  const ascii = title
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return ascii || `doc-${Date.now().toString(36)}`
+}
+
+export function childRelPath(parentSlug: string, stem: string, asFolder: boolean): string {
+  const safe = stem.replace(/\.md$/i, '').replaceAll('\\', '/').split('/').filter(Boolean).pop() ?? ''
+  if (!safe || safe === '.' || safe === '..') throw new Error('BAD_PATH')
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(safe)) throw new Error('BAD_NAME')
+  const file = asFolder ? `${safe}/index.md` : `${safe}.md`
+  return parentSlug ? `${parentSlug}/${file}` : file
+}
+
 export function getNeighbors(slug: string): { prev?: DocEntry; next?: DocEntry } {
-  const index = orderedDocs.findIndex((doc) => doc.slug === slug)
+  const index = catalog.orderedDocs.findIndex((doc) => doc.slug === slug)
   if (index === -1) return {}
   return {
-    prev: orderedDocs[index - 1],
-    next: orderedDocs[index + 1],
+    prev: catalog.orderedDocs[index - 1],
+    next: catalog.orderedDocs[index + 1],
   }
 }
 
@@ -266,7 +336,7 @@ export function isFolderNode(node: NavNode): boolean {
   return node.kind === 'folder' || Boolean(node.children?.length)
 }
 
-export function findNavNode(id: string, nodes: NavNode[] = navTree): NavNode | undefined {
+export function findNavNode(id: string, nodes: NavNode[] = catalog.navTree): NavNode | undefined {
   for (const node of nodes) {
     if (node.id === id || node.slug === id) return node
     if (node.children?.length) {
@@ -277,7 +347,7 @@ export function findNavNode(id: string, nodes: NavNode[] = navTree): NavNode | u
 }
 
 export function pageChildren(slug: string): { folders: NavNode[]; docs: NavNode[] } {
-  const kids = slug ? (findNavNode(slug)?.children ?? []) : navTree
+  const kids = slug ? (findNavNode(slug)?.children ?? []) : catalog.navTree
   const folders: NavNode[] = []
   const docs: NavNode[] = []
   for (const node of kids) {
@@ -286,4 +356,8 @@ export function pageChildren(slug: string): { folders: NavNode[]; docs: NavNode[
     else docs.push(node)
   }
   return { folders, docs }
+}
+
+export function isProtectedDoc(doc: DocEntry): boolean {
+  return doc.relPath === 'index.md' || doc.slug === ''
 }

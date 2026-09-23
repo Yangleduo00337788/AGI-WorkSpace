@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/composables/useI18n'
 import { useRoles } from '@/composables/useRoles'
-import { docsBySlug } from '@/lib/content'
+import { catalog, docsBySlug } from '@/lib/content'
 import { ROLES, type RoleId } from '@/lib/roles'
 import { cn } from '@/lib/utils'
 import {
@@ -96,6 +96,7 @@ watch(
 )
 
 const writableDocs = computed(() => {
+  void catalog.revision
   const list = [...ownedSlugs.value]
     .map((slug) => docsBySlug.get(slug))
     .filter((doc): doc is NonNullable<typeof doc> => Boolean(doc))

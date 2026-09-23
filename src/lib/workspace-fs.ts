@@ -68,6 +68,16 @@ async function resolveContentDir(root: FileSystemDirectoryHandle): Promise<FileS
 
 let contentDir: FileSystemDirectoryHandle | null = null
 let rootHandle: FileSystemDirectoryHandle | null = null
+const readyListeners = new Set<() => void>()
+
+export function onWorkspaceReady(listener: () => void) {
+  readyListeners.add(listener)
+  return () => readyListeners.delete(listener)
+}
+
+function notifyReady() {
+  for (const listener of readyListeners) listener()
+}
 
 async function applyHandle(handle: FileSystemDirectoryHandle, request = false): Promise<void> {
   const perm = request ? await requestWrite(handle) : await queryWrite(handle)
@@ -83,6 +93,7 @@ async function applyHandle(handle: FileSystemDirectoryHandle, request = false): 
   folderName.value = handle.name
   status.value = 'ready'
   fsError.value = ''
+  notifyReady()
 }
 
 export async function hydrateWorkspaceFs(): Promise<void> {
@@ -164,6 +175,65 @@ export async function writeWorkspaceFile(relPath: string, text: string): Promise
   const writable = await file.createWritable()
   await writable.write(text)
   await writable.close()
+}
+
+export async function writeWorkspaceBytes(relPath: string, data: BufferSource): Promise<void> {
+  const file = await fileHandle(relPath, true)
+  const writable = await file.createWritable()
+  await writable.write(data)
+  await writable.close()
+}
+
+export async function readWorkspaceBlob(relPath: string): Promise<Blob | null> {
+  try {
+    const file = await fileHandle(relPath, false)
+    return file.getFile()
+  } catch {
+    return null
+  }
+}
+
+export async function workspaceFileExists(relPath: string): Promise<boolean> {
+  try {
+    await fileHandle(relPath, false)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function deleteWorkspaceFile(relPath: string): Promise<void> {
+  if (!contentDir || status.value !== 'ready') throw new Error('NOT_READY')
+  const parts = relPath.split('/').filter(Boolean)
+  const fileName = parts.pop()
+  if (!fileName) throw new Error('BAD_PATH')
+  let dir = contentDir
+  for (const part of parts) {
+    dir = await dir.getDirectoryHandle(part)
+  }
+  await dir.removeEntry(fileName)
+}
+
+export async function listContentMarkdown(): Promise<{ relPath: string; raw: string }[]> {
+  if (!contentDir || status.value !== 'ready') return []
+  const out: { relPath: string; raw: string }[] = []
+
+  async function walk(dir: FileSystemDirectoryHandle, prefix: string) {
+    for await (const [name, handle] of dir.entries()) {
+      if (name.startsWith('.')) continue
+      const rel = prefix ? `${prefix}/${name}` : name
+      if (handle.kind === 'directory') {
+        await walk(handle as FileSystemDirectoryHandle, rel)
+        continue
+      }
+      if (!name.toLowerCase().endsWith('.md')) continue
+      const file = await (handle as FileSystemFileHandle).getFile()
+      out.push({ relPath: rel.replaceAll('\\', '/'), raw: await file.text() })
+    }
+  }
+
+  await walk(contentDir, '')
+  return out
 }
 
 export async function readWorkspaceFile(relPath: string): Promise<string | null> {

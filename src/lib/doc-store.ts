@@ -30,3 +30,14 @@ export async function saveDocOverride(slug: string, content: string): Promise<vo
     tx.onerror = () => reject(tx.error)
   })
 }
+
+export async function removeDocOverride(slug: string): Promise<void> {
+  docOverrides.delete(slug)
+  const db = await openDb()
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_OVERRIDES, 'readwrite')
+    tx.objectStore(STORE_OVERRIDES).delete(slug)
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}

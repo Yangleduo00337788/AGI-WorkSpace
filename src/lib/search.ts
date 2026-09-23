@@ -1,5 +1,5 @@
 import MiniSearch from 'minisearch'
-import { docs, type DocEntry } from '@/lib/content'
+import { catalog, type DocEntry } from '@/lib/content'
 import { stripMarkdown } from '@/lib/markdown'
 
 const engine = new MiniSearch({
@@ -22,7 +22,12 @@ function toRecord(doc: DocEntry) {
   }
 }
 
-engine.addAll(docs.map(toRecord))
+export function reindexAll() {
+  engine.removeAll()
+  engine.addAll(catalog.docs.map(toRecord))
+}
+
+reindexAll()
 
 export interface SearchHit {
   slug: string
@@ -44,4 +49,9 @@ export function reindexDoc(doc: DocEntry) {
   const id = doc.slug || 'index'
   if (engine.has(id)) engine.discard(id)
   engine.add(toRecord(doc))
+}
+
+export function removeSearchDoc(slug: string) {
+  const id = slug || 'index'
+  if (engine.has(id)) engine.discard(id)
 }

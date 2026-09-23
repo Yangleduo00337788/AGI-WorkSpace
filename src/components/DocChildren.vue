@@ -3,14 +3,17 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { FileText, Folder } from 'lucide-vue-next'
 import { useI18n } from '@/composables/useI18n'
-import { getDoc, pageChildren, type NavNode } from '@/lib/content'
+import { catalog, getDoc, pageChildren, type NavNode } from '@/lib/content'
 
 const props = defineProps<{
   slug: string
 }>()
 
 const { t } = useI18n()
-const groups = computed(() => pageChildren(props.slug))
+const groups = computed(() => {
+  void catalog.revision
+  return pageChildren(props.slug)
+})
 const hasItems = computed(() => groups.value.folders.length + groups.value.docs.length > 0)
 
 function hrefOf(node: NavNode) {
