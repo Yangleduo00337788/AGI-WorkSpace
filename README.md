@@ -5,8 +5,6 @@
   </picture>
 </p>
 
-<h1 align="center">AGI-WorkSpace</h1>
-
 <p align="center"><strong>知识写进仓库，人和 Agent 共用一份上下文</strong></p>
 
 <p align="center">
