@@ -19,7 +19,7 @@ AGI-WorkSpace 是**项目工作空间模板**，不是独立业务系统。当�
 | [项目概述](/project/overview) | 背景、范围、非目标 |
 | [项目角色](/project/roles) | 七个角色的对接人 |
 | [配置中心](/settings) | 本机目录、当前角色（`src/config/workspace-roles.json`）、工作空间标识、代码空间、推送文案 |
-| [Harness / AGENT.md](/space/harness/AGENT) | Agent 允许做什么、禁止做什么 |
+| [Harness / AGENTS.md](/space/harness/AGENTS) | Agent 允许做什么、禁止做什么 |
 
 ## 目录约定
 
@@ -36,4 +36,4 @@ AGI-WorkSpace 是**项目工作空间模板**，不是独立业务系统。当�
 
 1. 先读本页和 [项目概述](/project/overview)，再改具体文档。
 2. 写权限与可开发范围以 [配置中心](/settings) 勾选为准，文件是 `src/config/workspace-roles.json`。未勾选的角色禁止 Agent 修改。
-3. 工具调用与仓库改动必须遵守 [AGENT.md](/space/harness/AGENT)。
+3. 工具调用与仓库改动必须遵守 [AGENTS.md](/space/harness/AGENTS)。

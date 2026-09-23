@@ -27,7 +27,7 @@ order: 1
 1. **新成员第一天：** 读本页和 [项目角色](/project/roles)，勾选自己的角色，到对应目录补对接人。
 2. **改需求：** PM 先改 [用户与需求](/product/users) 和 [产品需求](/product/prd)，再通知研发，而不是只在群里说一句。
 3. **改写回或推送：** RD 先改 [接口契约](/engineering/contracts)，当天记入 [项目决策](/records/decisions)（若有取舍）。
-4. **上 Agent：** Agent 先读 [AGENT.md](/space/harness/AGENT)，再按目录改文档或代码，不另起一套上下文。
+4. **上 Agent：** Agent 先读 [AGENTS.md](/space/harness/AGENTS)，再按目录改文档或代码，不另起一套上下文。
 
 ## 现在有什么、没有什么
 
@@ -52,7 +52,7 @@ order: 1
 | --- | --- |
 | 项目成员 | 找到并改完自己职责内的文档，不必问人要链接 |
 | 新成员 / 接手人 | 2–10 分钟内理解范围、阶段、谁负责 |
-| AI Agent | 读同一棵 `src/content/` 和 `AGENT.md`，按约束改文件 |
+| AI Agent | 读同一棵 `src/content/` 和 `AGENTS.md`，按约束改文件 |
 
 ## 仓库与环境
 

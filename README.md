@@ -27,6 +27,6 @@ npm run preview
 - `index.md` 是该分类的入口
 - Frontmatter：`title`、`order`、`description`
 - 空间配置文档在 `src/content/space/`，不进「文档」树
-- Agent 约束：根目录 `AGENT.md`（与 `src/content/space/harness/AGENT.md` 正文同步）
+- Agent 约束：根目录 `AGENTS.md`（与 `src/content/space/harness/AGENTS.md` 正文同步）
 
-换项目时优先改：概述、目标、状态、角色对接人、AGENT.md 第 1 节表格。
+换项目时优先改：概述、目标、状态、角色对接人、AGENTS.md 第 1 节表格。

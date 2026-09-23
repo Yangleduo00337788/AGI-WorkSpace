@@ -1,10 +1,10 @@
 ---
-title: AGENT.md
+title: AGENTS.md
 description: 约束 Agent 使用本工作空间模板时的完整规则
 order: 1
 ---
 
-# AGENT.md
+# AGENTS.md
 
 你正在 **AGI-WorkSpace** 仓库里工作。这是面向研发项目的 **Workspace 模板**，不是独立业务系统。Vue 只提供知识库壳子；项目事实写在 Markdown 里。先读完本文件再改任何文件。
 
@@ -19,7 +19,7 @@ order: 1
 | 运行方式 | `npm run dev`（Vite，建议 Chrome / Edge） |
 | 主分支 | `main` |
 | 文档事实来源 | `src/content/**/*.md` |
-| Agent 约束文件 | 仓库根目录 `AGENT.md`（与 `src/content/space/harness/AGENT.md` 正文同步） |
+| Agent 约束文件 | 仓库根目录 `AGENTS.md`（与 `src/content/space/harness/AGENTS.md` 正文同步） |
 
 **你要做的：** 按用户请求改文档或代码，且必须遵循本仓库 `src/content` 里已经写明的范围、契约和规范，不要另起一套实现。
 
@@ -27,7 +27,7 @@ order: 1
 
 ## 2. 动手前必读（按顺序）
 
-1. 本文件 `AGENT.md`
+1. 本文件 `AGENTS.md`
 2. `src/config/workspace-roles.json` — 当前勾选了哪些角色（配置中心勾选会立刻写入此文件）
 3. `src/content/space/references.md` — 空间如何引用项目
 4. `src/content/project/overview.md` — 范围与非目标
@@ -40,7 +40,7 @@ order: 1
 
 ```
 AGI-WorkSpace/
-├── AGENT.md                          ← Agent 入口约束（根目录副本）
+├── AGENTS.md                          ← Agent 入口约束（根目录副本）
 ├── .agi-workspace.local.json         ← 令牌，禁止提交
 ├── .gitignore
 ├── package.json
@@ -56,7 +56,7 @@ AGI-WorkSpace/
 │   │       ├── references.md         ← 项目引用
 │   │       └── harness/
 │   │           ├── index.md          ← Harness 管理入口
-│   │           └── AGENT.md          ← 本文件的带 frontmatter 版本
+│   │           └── AGENTS.md          ← 本文件的带 frontmatter 版本
 │   ├── lib/roles.ts                  ← 七角色 ID 与可写 slug，禁止删 ID
 │   ├── lib/content.ts                ← MD 加载；`catalog.docsNavTree` 排除 `space`
 │   ├── lib/git-sync.ts               ← 按 .gitignore 整仓 commit/push
@@ -77,7 +77,7 @@ AGI-WorkSpace/
 
 1. **配置中心** `/settings`：角色范围、工作空间标识（名称 / Logo / 口号）、本地工作目录、代码空间、推送成功文案
 2. **项目引用** `/space/references`
-3. **Harness 管理** `/space/harness` → 主要维护 `AGENT.md`
+3. **Harness 管理** `/space/harness` → 主要维护 `AGENTS.md`
 
 禁止把 `src/content/space/` 做进「文档」导航。`src/lib/content.ts` 里必须保持 `catalog.docsNavTree` 过滤 `id === 'space'`。授权本地工作目录后，导航以磁盘上的 Markdown 为准（窗口重新聚焦会再扫一遍），不要只依赖构建时打包的文件。
 
@@ -126,7 +126,7 @@ order: 10
 - 有角色权限且已授权目录时：可在应用内新建 / 删除 Markdown（根目录 `index.md` 不可删）。
 - 编辑器粘贴的图片写到该文档目录下的 `assets/`，用相对路径引用。
 
-保存 AGENT.md（slug `space/harness/AGENT`）时：必须同步仓库根目录 `AGENT.md`（无 YAML frontmatter，仅正文）。应用内 `DocView` 已按此处理；若你用编辑器直接改，两份正文必须一致。
+保存 AGENTS.md（slug `space/harness/AGENTS`）时：必须同步仓库根目录 `AGENTS.md`（无 YAML frontmatter，仅正文）。应用内 `DocView` 已按此处理；若你用编辑器直接改，两份正文必须一致。
 
 ## 7. 代码约定
 
@@ -200,7 +200,7 @@ npm run build
 - [ ] 产品 / 设计 / 研发 / 质量 / 交付 / 记录中的占位已替换或标明仍待填
 - [ ] 配置中心：工作目录已授权，工作空间名称与 Logo 已换成当前项目，代码空间已绑定当前仓库
 - [ ] 本文件「1. 身份与目标」表格已更新
-- [ ] 根目录 `AGENT.md` 与 `src/content/space/harness/AGENT.md` 正文一致
+- [ ] 根目录 `AGENTS.md` 与 `src/content/space/harness/AGENTS.md` 正文一致
 - [ ] `.gitignore` 仍排除令牌与构建产物
 - [ ] 未新增「一篇文档一个 Vue 页」
 - [ ] 七个角色 ID 仍在

@@ -73,7 +73,7 @@ order: 3
 
 ## 给 Agent 的用法
 
-改代码或文档前让 Agent 先读根目录 `AGENT.md`（与 [Harness 里的 AGENT.md](/space/harness/AGENT) 正文同步）。保存 Harness 那一份时，应用会同步根目录副本。不要让 Agent 把业务事实只写在聊天里。
+改代码或文档前让 Agent 先读根目录 `AGENTS.md`（与 [Harness 里的 AGENTS.md](/space/harness/AGENTS) 正文同步）。保存 Harness 那一份时，应用会同步根目录副本。不要让 Agent 把业务事实只写在聊天里。
 
 ## 常见问题
 

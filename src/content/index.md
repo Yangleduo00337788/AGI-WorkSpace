@@ -51,4 +51,4 @@ order: 0
 - 文档都在 `src/content/`，一篇文档一个主题；新分类 = 新文件夹 + `index.md`
 - Frontmatter 的 `title`、`order`、`description` 控制侧栏
 - 决策、取舍、事故写入 [项目决策](/records/decisions)，不要只留在聊天里
-- Agent 动手前先读根目录 [AGENT.md](/space/harness/AGENT)
+- Agent 动手前先读根目录 [AGENTS.md](/space/harness/AGENTS)

@@ -104,8 +104,8 @@ async function saveEdit() {
     draft.value = body
     const fileText = serializeMarkdown(current, body)
     await writeWorkspaceFile(current.relPath, fileText)
-    if (current.slug === 'space/harness/AGENT') {
-      await writeRepoFile('AGENT.md', `${body.replace(/^\n+/, '')}\n`)
+    if (current.slug === 'space/harness/AGENTS') {
+      await writeRepoFile('AGENTS.md', `${body.replace(/^\n+/, '')}\n`)
     }
     await saveDocOverride(current.slug, body)
     const updated = getDoc(current.slug)

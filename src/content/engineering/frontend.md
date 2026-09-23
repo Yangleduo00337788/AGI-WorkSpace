@@ -25,7 +25,7 @@ FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/ha
 | `/` | 项目首页 | `src/content/index.md` |
 | `/settings` | 配置中心 | 角色、标识、工作目录、代码空间、推送文案 |
 | `/space/references` | 项目引用 | 空间配置 Markdown |
-| `/space/harness` | Harness 管理 | 含 AGENT.md |
+| `/space/harness` | Harness 管理 | 含 AGENTS.md |
 | `/{slug}` | 文档 | 与 MD 路径对应 |
 
 ## 状态
