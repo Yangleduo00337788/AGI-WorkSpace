@@ -1,6 +1,6 @@
 # AGI-WorkSpace
 
-面向研发项目的 **Workspace 模版**：Vue 3 只提供知识库壳子，项目上下文全部写在 `src/content/` 的 Markdown 里。
+面向研发项目的 **Workspace 模版**：纯前端静态工程，Vue 3 只提供知识库壳子，项目上下文全部写在 `src/content/` 的 Markdown 里。没有自建后端。
 
 把模版里的占位段落换成当前项目即可。不要为每篇文档新建 Vue 页面。
 

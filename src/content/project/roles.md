@@ -36,7 +36,7 @@ order: 3
 
 - **需求入口：** PM 写入 [用户与需求](/product/users) 和 [产品需求](/product/prd)，评审通过后再进研发。
 - **设计入口：** UIUE 在 [设计交付](/design/handoff) 勾选完成，FE 才按稿实现。
-- **契约入口：** RD 改接口必须先改 [接口契约](/engineering/contracts)，再通知 FE / QA。
+- **契约入口：** RD 改写回或 Git 推送约定必须先改 [接口契约](/engineering/contracts)，再通知 FE / QA。
 - **发布入口：** QA 门禁通过后，OP 按 [运维与交付](/delivery/ops) 发布；回滚同样走该页。
 - **决策入口：** 聊天里达成的结论，POM 当天写入 [项目决策](/records/decisions)。
 - **紧急升级：** 阻塞超过一个工作日 → 对接人 → POM → 项目负责人。

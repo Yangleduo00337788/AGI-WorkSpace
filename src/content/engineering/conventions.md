@@ -38,7 +38,7 @@ npm run build
 
 ## 文档同步检查
 
-- [ ] 接口变了 → [接口契约](/engineering/contracts)
+- [ ] 写回 / Git 推送约定变了 → [接口契约](/engineering/contracts)
 - [ ] 领域变了 → [领域设计](/engineering/domain)
 - [ ] 取舍定了 → [项目决策](/records/decisions)
 - [ ] 前端结构变了 → 通知 FE 更新 [前端结构](/engineering/frontend)

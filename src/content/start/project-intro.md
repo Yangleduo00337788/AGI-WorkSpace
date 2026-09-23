@@ -26,7 +26,7 @@ order: 1
 
 1. **新成员第一天：** 读本页和 [项目角色](/project/roles)，勾选自己的角色，到对应目录补对接人。
 2. **改需求：** PM 先改 [用户与需求](/product/users) 和 [产品需求](/product/prd)，再通知研发，而不是只在群里说一句。
-3. **改接口：** RD 先改 [接口契约](/engineering/contracts)，当天记入 [项目决策](/records/decisions)（若有取舍）。
+3. **改写回或推送：** RD 先改 [接口契约](/engineering/contracts)，当天记入 [项目决策](/records/decisions)（若有取舍）。
 4. **上 Agent：** Agent 先读 [AGENT.md](/space/harness/AGENT)，再按目录改文档或代码，不另起一套上下文。
 
 ## 现在有什么、没有什么
@@ -41,7 +41,7 @@ order: 1
 
 **没有（非目标）：**
 
-- 账号体系、云端多人实时编辑、评论流
+- 账号体系、云端多人实时编辑、评论流、自建后端
 - 为每一篇文档单独做一个 Vue 页面
 - 应用内 git pull / 冲突合并（现阶段只提交推送）
 - 用数据库 CMS 代替仓库里的 Markdown
@@ -62,7 +62,7 @@ order: 1
 | 主分支 | `main`（或当前仓库实际分支） |
 | 预览 | `npm run dev` |
 | 生产 / 静态托管 | （若有） |
-| 对接系统 | （设计工具、后端、CI） |
+| 对接系统 | Git 托管、设计工具、CI（无自建后端） |
 | 文档事实来源 | `src/content/**/*.md` |
 
 ## 怎么维护本页

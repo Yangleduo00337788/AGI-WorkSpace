@@ -4,7 +4,7 @@ description: 页面、状态、组件契约与无障碍
 order: 4
 ---
 
-FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/handoff) 为准，接口以 [接口契约](/engineering/contracts) 为准。
+FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/handoff) 为准，写回与推送约定以 [接口契约](/engineering/contracts) 为准。
 
 ## 本模版结构（可当范例，换项目后整页替换）
 
