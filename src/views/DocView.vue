@@ -5,9 +5,14 @@ import { ArrowLeft, ArrowRight } from 'lucide-vue-next'
 import DocToc from '@/components/DocToc.vue'
 import DocChildren from '@/components/DocChildren.vue'
 import { useI18n } from '@/composables/useI18n'
-import { docDir, getDoc, getNeighbors, slugFromPath } from '@/lib/content'
-import { saveDocOverride, docOverrides } from '@/lib/doc-store'
+import { catalog, docDir, getDoc, getNeighbors, isProtectedDoc, slugFromPath } from '@/lib/content'
+import { canCreateIn, createWorkspaceDoc } from '@/lib/doc-manage'
+import { pendingEditSlug } from '@/lib/doc-session'
+import { hydrateContentImages } from '@/lib/content-images'
+import { saveDocOverride, removeDocOverride, docOverrides } from '@/lib/doc-store'
+import { syncCatalogFromDisk } from '@/lib/catalog-sync'
 import {
+  deleteWorkspaceFile,
   reconnectWorkspace,
   serializeMarkdown,
   useWorkspaceFs,
@@ -17,6 +22,7 @@ import {
 import { pushWorkspaceFile, useRemoteGit } from '@/lib/remote-git'
 import { reindexDoc } from '@/lib/search'
 import DocVisualEditor from '@/components/DocVisualEditor.vue'
+import DocCreateDialog from '@/components/DocCreateDialog.vue'
 import { Button } from '@/components/ui/button'
 import { useRoles } from '@/composables/useRoles'
 import { isOwnedSlug } from '@/lib/roles'
@@ -33,21 +39,37 @@ const { ready: remoteReady, autoPush } = useRemoteGit()
 const slug = computed(() => slugFromPath(route.path))
 
 const doc = computed(() => {
+  void catalog.revision
   void docOverrides.get(slug.value)
   return getDoc(slug.value)
 })
-const neighbors = computed(() => getNeighbors(slug.value))
+const neighbors = computed(() => {
+  void catalog.revision
+  return getNeighbors(slug.value)
+})
 const canEdit = computed(() => {
   if (!selected.value.length || !doc.value) return false
   if (doc.value.segments[0] === 'space') return true
   return isOwnedSlug(doc.value.slug, ownedSlugs.value)
 })
+const createParent = computed(() => {
+  const current = doc.value
+  if (!current || !current.slug) return ''
+  if (current.segments[0] === 'space') {
+    return current.isIndex ? current.slug : docDir(current) || current.slug
+  }
+  return current.isIndex ? current.slug : current.slug
+})
+const canCreate = computed(() => canCreateIn(createParent.value, selected.value, ownedSlugs.value))
+const canDelete = computed(() => canEdit.value && doc.value && !isProtectedDoc(doc.value))
 
 const editing = ref(false)
 const draft = ref('')
 const saving = ref(false)
 const saveMessage = ref('')
 const visualEditor = ref<{ getMarkdown: () => string } | null>(null)
+const creating = ref(false)
+const articleRoot = ref<HTMLElement | null>(null)
 
 function startEdit() {
   if (!canEdit.value || !doc.value) return
@@ -101,6 +123,48 @@ async function saveEdit() {
     saveMessage.value = fsReady.value ? t.value('settingsFail') : t.value('needWorkspace')
   } finally {
     saving.value = false
+  }
+}
+
+async function createDoc(payload: {
+  title: string
+  description: string
+  relPath: string
+  slug: string
+  order: number
+}) {
+  saveMessage.value = ''
+  try {
+    await createWorkspaceDoc(payload)
+    creating.value = false
+    await router.push(payload.slug ? `/${payload.slug}` : '/')
+    saveMessage.value = t.value('docCreated')
+  } catch (error) {
+    const code = error instanceof Error ? error.message : ''
+    if (code === 'NEED_WORKSPACE') saveMessage.value = t.value('needWorkspace')
+    else if (code === 'EXISTS') saveMessage.value = t.value('docExists')
+    else saveMessage.value = t.value('settingsFail')
+  }
+}
+
+async function deleteCurrent() {
+  const current = doc.value
+  if (!current || !canDelete.value) return
+  if (!window.confirm(t.value('deleteDocConfirm'))) return
+  saveMessage.value = ''
+  try {
+    if (fsStatus.value === 'need-permission') await reconnectWorkspace()
+    if (!fsReady.value) {
+      saveMessage.value = t.value('needWorkspace')
+      return
+    }
+    await deleteWorkspaceFile(current.relPath)
+    await removeDocOverride(current.slug)
+    await syncCatalogFromDisk()
+    const parent = docDir(current)
+    await router.push(parent ? `/${parent}` : '/')
+  } catch {
+    saveMessage.value = t.value('settingsFail')
   }
 }
 
@@ -205,10 +269,23 @@ async function onContentClick(event: MouseEvent) {
   }
 }
 
-watch([slug, locale, () => docOverrides.get(slug.value)], () => {
+function tryStartPendingEdit() {
+  if (pendingEditSlug.value === null) return
+  if (pendingEditSlug.value !== slug.value) return
+  if (!canEdit.value || !doc.value) return
+  startEdit()
+  pendingEditSlug.value = null
+}
+
+watch([slug, locale, () => docOverrides.get(slug.value), () => catalog.revision], () => {
   editing.value = false
   void load()
+  queueMicrotask(() => tryStartPendingEdit())
 }, { immediate: true })
+
+watch(pendingEditSlug, () => {
+  tryStartPendingEdit()
+})
 
 watch(
   () => doc.value?.title,
@@ -223,6 +300,9 @@ watch(html, async () => {
   document.querySelectorAll('.copy-code').forEach((btn) => {
     btn.textContent = messages[locale.value].copy
   })
+  if (articleRoot.value && doc.value) {
+    await hydrateContentImages(articleRoot.value, docDir(doc.value))
+  }
 })
 
 onMounted(() => {
@@ -253,6 +333,12 @@ onUnmounted(() => {
             <Button v-if="canEdit && !editing" size="sm" variant="outline" @click="startEdit">
               {{ t('editDoc') }}
             </Button>
+            <Button v-if="canCreate && !editing" size="sm" variant="outline" @click="creating = true">
+              {{ t('newDoc') }}
+            </Button>
+            <Button v-if="canDelete && !editing" size="sm" variant="ghost" @click="deleteCurrent">
+              {{ t('deleteDoc') }}
+            </Button>
             <template v-if="editing">
               <Button size="sm" :disabled="saving" @click="saveEdit">{{ t('saveDoc') }}</Button>
               <Button size="sm" variant="ghost" :disabled="saving" @click="cancelEdit">{{ t('cancelEdit') }}</Button>
@@ -268,10 +354,12 @@ onUnmounted(() => {
             v-if="editing"
             ref="visualEditor"
             v-model="draft"
+            :doc-dir="docDir(doc)"
             @save="saveEdit"
           />
           <div
             v-else-if="!loading"
+            ref="articleRoot"
             class="prose prose-docs mt-8 max-w-none prose-headings:scroll-mt-24"
             @click="onContentClick"
             v-html="html"
@@ -324,5 +412,6 @@ onUnmounted(() => {
         @select="scrollToHeading"
       />
     </aside>
+    <DocCreateDialog v-model:open="creating" :parent-slug="createParent" @create="createDoc" />
   </div>
 </template>

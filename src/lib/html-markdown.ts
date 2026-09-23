@@ -103,6 +103,18 @@ export function editableHtmlToMarkdown(html: string): string {
     hr: '---',
   })
 
+  turndown.addRule('contentImage', {
+    filter: 'img',
+    replacement(_content, node) {
+      const el = node as HTMLImageElement
+      const alt = el.getAttribute('alt') || ''
+      const rel = el.getAttribute('data-rel') || ''
+      const src = rel || el.getAttribute('src') || ''
+      if (!src || src.startsWith('blob:') || src.startsWith('data:')) return ''
+      return `![${alt}](${src})`
+    },
+  })
+
   turndown.addRule('tableWrap', {
     filter: (node) => node instanceof HTMLElement && node.classList.contains('table-wrap'),
     replacement(_content, node) {

@@ -108,7 +108,7 @@ function resolveLang(lang: string): string {
   return resolved
 }
 
-function joinPath(dir: string, rel: string): string {
+export function joinPath(dir: string, rel: string): string {
   const parts = [...(dir ? dir.split('/') : []), ...rel.split('/')]
   const stack: string[] = []
   for (const part of parts) {
@@ -231,6 +231,17 @@ export async function renderMarkdown(
       ? defaultTableClose(tokens, idx, options, env, self)
       : self.renderToken(tokens, idx, options)
     return `${close}</div>`
+  }
+
+  const defaultImage = md.renderer.rules.image?.bind(md.renderer)
+  md.renderer.rules.image = (tokens, idx, options, env, self) => {
+    const token = tokens[idx]!
+    const src = String(token.attrGet('src') ?? '')
+    if (src && !/^(https?:|data:|blob:)/i.test(src)) {
+      const path = src.startsWith('/') ? src.replace(/^\/+/, '') : joinPath(dir, src)
+      token.attrSet('data-content-path', path.replace(/^src\/content\//, ''))
+    }
+    return defaultImage ? defaultImage(tokens, idx, options, env, self) : self.renderToken(tokens, idx, options)
   }
 
   const defaultLinkOpen = md.renderer.rules.link_open?.bind(md.renderer)
