@@ -47,7 +47,7 @@ function isActive(slug?: string) {
 
 function isAncestor(node: NavNode): boolean {
   const current = currentSlug()
-  if (!current) return false
+  if (!current) return node.id === 'start'
   return current.startsWith(`${node.id}/`) || current === node.id
 }
 

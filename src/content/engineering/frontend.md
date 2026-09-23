@@ -11,7 +11,7 @@ FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/ha
 | 区域 | 实现 |
 | --- | --- |
 | 路由 | History SPA，文档走 `/:slug(.*)`，配置中心 `/settings` |
-| 布局 | 顶栏 + 可调整左侧导航 + 正文 + 本页目录 |
+| 布局 | 顶栏 + 可调整左侧导航 + 正文 + 当前文档数量 + 本页目录 |
 | 文档页 | `DocView.vue` 通用渲染，不按文档拆页面 |
 | 状态 | 主题 / 语言 / 侧栏宽度在 localStorage；角色在 localStorage；目录句柄在 IndexedDB |
 | 写回 | File System Access API，保存时写 `src/content/*.md` |
@@ -56,6 +56,7 @@ FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/ha
 | `NavTree` | 导航节点 | 展开 / 跳转 | 左侧目录；首页「开始阅读」复用同一棵树 |
 | `DocVisualEditor` | Markdown、文档目录 | 保存、贴图 | 预览内编辑 |
 | `DocHomeNav` | — | — | 项目首页目录，层级与侧栏相同 |
+| `DocStats` | — | — | 右侧当前文档真实数量（不含空间配置） |
 | `DocChildren` | 当前 slug | — | 目录页列出子目录 / 文档 |
 | `DocCreateDialog` | 父级 slug | 创建 | 按角色新建 MD |
 

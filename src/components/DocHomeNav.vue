@@ -7,7 +7,7 @@ import { useI18n } from '@/composables/useI18n'
 const { t } = useI18n()
 const nodes = computed(() => {
   void catalog.revision
-  return catalog.docsNavTree.filter((node) => node.id !== 'home')
+  return catalog.docsNavTree
 })
 </script>
 

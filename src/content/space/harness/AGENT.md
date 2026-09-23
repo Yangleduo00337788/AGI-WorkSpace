@@ -46,7 +46,7 @@ AGI-WorkSpace/
 ├── vite.config.ts                    ← 含 Git 远程代理
 ├── src/
 │   ├── content/                      ← 文档树（会出现在侧栏「文档」）
-│   │   ├── index.md                  ← 项目首页
+│   │   ├── index.md                  ← 项目首页（导航挂在「开始阅读」下）
 │   │   ├── start/                    ← 开始阅读
 │   │   ├── project/ product/ design/
 │   │   ├── engineering/ quality/
@@ -68,8 +68,7 @@ AGI-WorkSpace/
 
 **文档（`catalog.docsNavTree`）**
 
-- 项目首页
-- 开始阅读（项目介绍、新范式、WorkSpace 指南）
+- 开始阅读（项目首页、项目介绍、新范式、WorkSpace 指南）
 - 项目 / 产品 / 设计 / 研发 / 质量 / 交付 / 记录
 
 **空间配置（侧栏单独一组，不进文档树）**

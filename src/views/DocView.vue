@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, ArrowRight } from 'lucide-vue-next'
 import DocToc from '@/components/DocToc.vue'
+import DocStats from '@/components/DocStats.vue'
 import DocChildren from '@/components/DocChildren.vue'
 import DocHomeNav from '@/components/DocHomeNav.vue'
 import { useI18n } from '@/composables/useI18n'
@@ -408,6 +409,7 @@ onUnmounted(() => {
       </Transition>
     </div>
     <aside class="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-56 shrink-0 overflow-y-auto py-8 pr-6 lg:block scrollbar-thin">
+      <DocStats />
       <DocToc
         :items="toc"
         :active-id="activeId"

@@ -185,7 +185,9 @@ function buildNav(docs: DocEntry[]): NavNode[] {
 
   for (const doc of docs) {
     if (!doc.segments.length) {
-      root.push({
+      const start = ensureFolder(['start'])
+      start.children = start.children ?? []
+      start.children.push({
         id: 'home',
         title: doc.title,
         slug: doc.slug,
@@ -360,4 +362,19 @@ export function pageChildren(slug: string): { folders: NavNode[]; docs: NavNode[
 
 export function isProtectedDoc(doc: DocEntry): boolean {
   return doc.relPath === 'index.md' || doc.slug === ''
+}
+
+export function isSpaceRel(relPath: string): boolean {
+  return relPath.replaceAll('\\', '/').startsWith('space/')
+}
+
+export function countWorkspaceDocs(): { files: number; folders: number } {
+  let files = 0
+  let folders = 0
+  for (const doc of catalog.docs) {
+    if (isSpaceRel(doc.relPath)) continue
+    files += 1
+    if (doc.isIndex && doc.slug) folders += 1
+  }
+  return { files, folders }
 }
