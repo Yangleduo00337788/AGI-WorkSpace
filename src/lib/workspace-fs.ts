@@ -371,6 +371,7 @@ const SKIP_REPO_FILES = new Set([
   '.agi-workspace.local.json',
   'pnpm-lock.yaml',
   'yarn.lock',
+  'workspace-roles.json',
 ])
 
 export async function rewriteRepoTextFiles(

@@ -15,17 +15,18 @@
 | 文档事实来源 | `src/content/**/*.md` |
 | Agent 约束文件 | 仓库根目录 `AGENT.md`（与 `src/content/space/harness/AGENT.md` 正文同步） |
 
-**你要做的：** 按用户请求改文档或代码，保持模板结构完整、可写回、可推送。
+**你要做的：** 按用户请求改文档或代码，且必须遵循本仓库 `src/content` 里已经写明的范围、契约和规范，不要另起一套实现。
 
 **你不要做的：** 把本仓库做成 CMS、账号系统、自建后端、或按文档拆路由。
 
 ## 2. 动手前必读（按顺序）
 
 1. 本文件 `AGENT.md`
-2. `src/content/space/references.md` — 空间如何引用项目
-3. `src/content/project/overview.md` — 范围与非目标
-4. `src/content/project/roles.md` — 七角色与可写目录
-5. 若改代码：`src/content/engineering/frontend.md`、`src/content/engineering/conventions.md`
+2. `src/config/workspace-roles.json` — 当前勾选了哪些角色（配置中心勾选会立刻写入此文件）
+3. `src/content/space/references.md` — 空间如何引用项目
+4. `src/content/project/overview.md` — 范围与非目标
+5. `src/content/project/roles.md` — 七角色与可写目录
+6. 若改代码：`src/content/engineering/frontend.md`、`src/content/engineering/conventions.md`
 
 用户指定了某一篇文档时，再打开对应 `src/content/...` 文件。不要在没读范围的情况下大范围重构。
 
@@ -53,6 +54,7 @@ AGI-WorkSpace/
 │   ├── lib/roles.ts                  ← 七角色 ID 与可写 slug，禁止删 ID
 │   ├── lib/content.ts                ← MD 加载；`catalog.docsNavTree` 排除 `space`
 │   ├── lib/git-sync.ts               ← 按 .gitignore 整仓 commit/push
+│   ├── config/workspace-roles.json   ← 当前勾选角色（配置中心实时写入）
 │   ├── views/SettingsView.vue        ← 配置中心（含工作空间标识）
 │   └── views/DocView.vue             ← 唯一文档页
 └── dist/ node_modules/               ← 忽略，禁止提交
@@ -89,7 +91,11 @@ AGI-WorkSpace/
 
 额外规则：
 
-- `src/content/space/**`：只要用户在配置中心勾选了任意角色，即可在应用内编辑。
+- 当前已启用角色以 `src/config/workspace-roles.json` 的 `selected`（或 `roles[].enabled`）为准，不要用浏览器 localStorage 猜测。
+- 只允许在已勾选角色的职责范围内改文档或做对应开发。未勾选的范围仍可读，但禁止修改。
+- 用户请求落在未勾选角色上时：提示「请先在 Workspace 配置中心勾选对应角色」，然后停止对该范围的修改。
+- `selected` 为空时：不要改任何角色目录下的文档或对应实现，先请用户勾选。
+- `src/content/space/**`：只要勾选了任意角色，即可在应用内编辑。
 - `src/content/start/**` 与根目录 `index.md`（项目首页）：任意已选角色可读可改。
 - 不要擅自把某篇文档的 slug 加进另一个角色，除非用户明确要求。
 - 不要新增第八个角色，除非用户明确要求并同时改 `roles.ts`、配置中心文案、`project/roles.md`。
@@ -176,6 +182,7 @@ npm run build
 | 改推送成功文案 | `src/config/push-success.json` 或配置中心「推送成功文案」 |
 | 改名称 / Logo / 口号 | `src/config/branding.json`、`public/logo-*.png` 或配置中心「工作空间标识」 |
 | 改角色可写范围 | 同时改 `src/lib/roles.ts` 与 `src/content/project/roles.md` |
+| 看当前勾选了谁 | 读 `src/config/workspace-roles.json`，不要读浏览器缓存 |
 | 修 Git 推送 | `git-sync.ts` / `handle-fs.ts` / `vite.config.ts` 代理，不要改回 Contents API 逐文件提交 |
 
 ## 12. 换项目检查清单

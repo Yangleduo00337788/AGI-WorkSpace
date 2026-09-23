@@ -9,6 +9,7 @@ Harness 是给 **Agent 工具**用的约束层：规定可以改哪些文件、�
 ## 当前项目入口
 
 - [AGENT.md](/space/harness/AGENT) — 主约束文件。保存后会同步到仓库根目录 `AGENT.md`，供 Cursor / 其它 Agent 读取。
+- `src/config/workspace-roles.json` — 当前勾选角色。配置中心勾选会立刻写入，Agent 动手前必须读。
 
 ## 使用方式
 

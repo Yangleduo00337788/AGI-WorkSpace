@@ -13,7 +13,7 @@ FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/ha
 | 路由 | History SPA，文档走 `/:slug(.*)`，配置中心 `/settings` |
 | 布局 | 顶栏 + 可调整左侧导航 + 正文 + 当前文档数量 + 本页目录 |
 | 文档页 | `DocView.vue` 通用渲染，不按文档拆页面 |
-| 状态 | 主题 / 语言 / 侧栏宽度在 localStorage；角色在 localStorage；目录句柄在 IndexedDB |
+| 状态 | 主题 / 语言 / 侧栏宽度在 localStorage；角色以 `src/config/workspace-roles.json` 为准（勾选立刻写盘）；目录句柄在 IndexedDB |
 | 写回 | File System Access API，保存时写 `src/content/*.md` |
 | 导航 | 授权工作目录后按磁盘扫描 Markdown；未授权时用构建时打包的文件 |
 | 远程 | 配置中心绑定代码空间后可提交推送 |
@@ -32,7 +32,7 @@ FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/ha
 
 | 名称 | 范围 | 来源 | 谁改 |
 | --- | --- | --- | --- |
-| 当前角色 | 全局 | localStorage | 用户在配置中心勾选 |
+| 当前角色 | 全局 | `src/config/workspace-roles.json` | 配置中心勾选，立刻写盘 |
 | 工作目录 | 全局 | IndexedDB handle | 用户授权 |
 | 文档目录 | 全局 | 磁盘 `src/content`（授权后） | 保存 / 新建 / 删除 / 窗口重新聚焦 |
 | 文档覆盖 | 文档 | IndexedDB + 磁盘 MD | 有写权限的角色 |

@@ -14,8 +14,8 @@ RD 维护。本工程是 **纯前端**：没有自建服务、没有自有 REST 
 | --- | --- |
 | 运行 | Vite 开发 / 静态 `dist/`，History 路由回退 `index.html` |
 | 自建后端 | **没有**。不要加业务 API 服务 |
-| 数据 | Markdown 在仓库 `src/content/`；偏好在 localStorage；目录句柄在 IndexedDB |
-| 鉴权 | 配置中心勾选七个角色（本机），不是登录账号 |
+| 数据 | Markdown 在仓库 `src/content/`；当前角色在 `src/config/workspace-roles.json`；主题等偏好在 localStorage；目录句柄在 IndexedDB |
+| 鉴权 | 配置中心勾选七个角色并写回 JSON，不是登录账号 |
 
 ## 浏览器写回
 

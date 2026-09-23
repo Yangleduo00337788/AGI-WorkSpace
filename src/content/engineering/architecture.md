@@ -14,8 +14,8 @@ RD 维护。改栈、改模块边界先改本页，再改代码。
 | 界面 | Vue 3 + TypeScript + Vite |
 | 样式 | Tailwind CSS + shadcn-vue |
 | 内容 | `src/content/` Markdown |
-| 数据 | 浏览器偏好 + 本地目录授权写回 MD |
-| 鉴权 | 角色勾选（本机） |
+| 数据 | 浏览器偏好 + 本地目录授权写回 MD / 角色 JSON |
+| 鉴权 | 配置中心勾选，写入 `src/config/workspace-roles.json` |
 | 远程（可选） | 浏览器推送到 Git 平台 |
 
 ## 模块
@@ -28,6 +28,7 @@ src/lib/markdown.ts       渲染
 src/lib/roles.ts          七个角色与可写范围
 src/lib/workspace-fs.ts   授权目录、写回 MD / 图片
 src/lib/branding.ts       工作空间名称、口号、Logo
+src/lib/workspace-roles.ts 当前勾选角色，写 `src/config/workspace-roles.json`
 src/lib/git-sync.ts       按 .gitignore 整仓 commit/push
 src/views/DocView.vue     通用文档页（不要为每篇 MD 新建 Vue 页）
 src/views/SettingsView.vue 配置中心
@@ -37,9 +38,10 @@ src/views/SettingsView.vue 配置中心
 
 1. 未授权时：构建打包的 `src/content/**/*.md` 作为初始目录
 2. 授权工作目录后：扫描磁盘 Markdown，侧栏、搜索与磁盘一致
-3. 预览里编辑 → 校验角色范围 → 写回本地文件；图片写入该文档下 `assets/`
-4. 按角色可新建 / 删除 `.md`（根目录 `index.md` 除外）
-5. 绑定代码空间后：按 `.gitignore` 提交并推送整个仓库
+3. 配置中心勾选角色：立刻写入 `src/config/workspace-roles.json`（Agent 读这份，不读浏览器缓存）
+4. 预览里编辑 → 校验角色范围 → 写回本地文件；图片写入该文档下 `assets/`
+5. 按角色可新建 / 删除 `.md`（根目录 `index.md` 除外）
+6. 绑定代码空间后：按 `.gitignore` 提交并推送整个仓库
 
 ## 质量属性
 

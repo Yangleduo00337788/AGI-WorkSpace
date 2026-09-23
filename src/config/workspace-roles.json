@@ -1,0 +1,54 @@
+{
+  "selected": [],
+  "roles": [
+    {
+      "id": "rd",
+      "shortName": "RD",
+      "titleZh": "研发设计",
+      "titleEn": "Engineering",
+      "enabled": false
+    },
+    {
+      "id": "fe",
+      "shortName": "FE",
+      "titleZh": "前端研发",
+      "titleEn": "Frontend",
+      "enabled": false
+    },
+    {
+      "id": "pm",
+      "shortName": "PM",
+      "titleZh": "产品设计",
+      "titleEn": "Product",
+      "enabled": false
+    },
+    {
+      "id": "qa",
+      "shortName": "QA",
+      "titleZh": "测试",
+      "titleEn": "QA",
+      "enabled": false
+    },
+    {
+      "id": "op",
+      "shortName": "OP",
+      "titleZh": "运维",
+      "titleEn": "Ops",
+      "enabled": false
+    },
+    {
+      "id": "uiue",
+      "shortName": "UIUE",
+      "titleZh": "视觉与体验设计",
+      "titleEn": "Design",
+      "enabled": false
+    },
+    {
+      "id": "pom",
+      "shortName": "POM",
+      "titleZh": "项目与交付管理",
+      "titleEn": "Program",
+      "enabled": false
+    }
+  ]
+}

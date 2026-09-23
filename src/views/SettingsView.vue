@@ -6,7 +6,7 @@ import RemotePushDialog from '@/components/RemotePushDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/composables/useI18n'
-import { useRoles } from '@/composables/useRoles'
+import { hydrateRoles, useRoles } from '@/composables/useRoles'
 import { catalog, docsBySlug } from '@/lib/content'
 import { syncCatalogFromDisk } from '@/lib/catalog-sync'
 import { isSharedWritableSlug, ROLES, type RoleId } from '@/lib/roles'
@@ -157,6 +157,7 @@ async function connect() {
     await hydrateRemoteGit()
     await hydratePushCopy()
     await hydrateBranding()
+    await hydrateRoles()
     message.value = t.value('settingsOk')
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') return
@@ -174,6 +175,7 @@ async function reconnect() {
     await hydrateRemoteGit()
     await hydratePushCopy()
     await hydrateBranding()
+    await hydrateRoles()
     message.value = t.value('settingsOk')
   } catch {
     message.value = t.value('settingsFail')
@@ -392,6 +394,7 @@ function tokenHelpHref() {
             </div>
           </button>
         </div>
+        <p v-if="!fsReady" class="mt-3 text-sm text-muted-foreground">{{ t('brandNeedFolder') }}</p>
 
         <div class="mt-4 rounded-xl border bg-muted/40 p-5">
           <h3 class="text-sm font-semibold">{{ t('writableNow') }}</h3>
