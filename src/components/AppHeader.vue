@@ -7,12 +7,14 @@ import DocSearch from '@/components/DocSearch.vue'
 import LangToggle from '@/components/LangToggle.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useI18n } from '@/composables/useI18n'
+import { useBranding } from '@/lib/branding'
 
 const emit = defineEmits<{
   menu: []
 }>()
 
 const { t } = useI18n()
+const { logoLightSrc, logoDarkSrc } = useBranding()
 </script>
 
 <template>
@@ -21,8 +23,8 @@ const { t } = useI18n()
       <Menu class="size-4" />
     </Button>
     <RouterLink to="/" class="flex shrink-0 items-center" :aria-label="t('product')">
-      <img src="/logo-light.png" alt="AGI WorkSpace" class="h-7 w-auto dark:hidden" />
-      <img src="/logo-dark.png" alt="AGI WorkSpace" class="hidden h-7 w-auto dark:block" />
+      <img :src="logoLightSrc" :alt="t('product')" class="h-7 w-auto dark:hidden" />
+      <img :src="logoDarkSrc" :alt="t('product')" class="hidden h-7 w-auto dark:block" />
     </RouterLink>
     <DocBreadcrumb />
     <div class="ml-auto flex shrink-0 items-center gap-1.5">

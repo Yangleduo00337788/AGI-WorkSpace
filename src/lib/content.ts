@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { docOverrides } from '@/lib/doc-store'
+import { workspaceName } from '@/lib/branding'
 
 export interface DocEntry {
   slug: string
@@ -143,7 +144,7 @@ export function docFromFile(relPath: string, raw: string): DocEntry {
   const { data, content } = parseFrontmatter(raw)
   const slug = toSlug(relPath)
   const segments = slug ? slug.split('/') : []
-  const fallback = segments.length ? titleFromSegment(segments[segments.length - 1]!) : 'AGI-WorkSpace'
+  const fallback = segments.length ? titleFromSegment(segments[segments.length - 1]!) : workspaceName()
   return {
     slug,
     title: data.title ?? fallback,

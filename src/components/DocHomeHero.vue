@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { useI18n } from '@/composables/useI18n'
+import { useBranding } from '@/lib/branding'
 
 const { t } = useI18n()
+const { logoLightSrc, logoDarkSrc } = useBranding()
 </script>
 
 <template>
   <section class="rounded-2xl border bg-card px-6 py-8 sm:px-10 sm:py-10">
     <div class="flex justify-center">
-      <img src="/logo-light.png" :alt="t('product')" class="h-12 w-auto dark:hidden sm:h-14" />
-      <img src="/logo-dark.png" :alt="t('product')" class="hidden h-12 w-auto dark:block sm:h-14" />
+      <img :src="logoLightSrc" :alt="t('product')" class="h-12 w-auto dark:hidden sm:h-14" />
+      <img :src="logoDarkSrc" :alt="t('product')" class="hidden h-12 w-auto dark:block sm:h-14" />
     </div>
     <p class="mt-5 text-center text-xl font-semibold tracking-tight text-balance sm:text-2xl">
       {{ t('homeSlogan') }}

@@ -27,6 +27,7 @@ src/lib/catalog-sync.ts   授权目录后按磁盘扫描并刷新侧栏
 src/lib/markdown.ts       渲染
 src/lib/roles.ts          七个角色与可写范围
 src/lib/workspace-fs.ts   授权目录、写回 MD / 图片
+src/lib/branding.ts       工作空间名称、口号、Logo
 src/lib/git-sync.ts       按 .gitignore 整仓 commit/push
 src/views/DocView.vue     通用文档页（不要为每篇 MD 新建 Vue 页）
 src/views/SettingsView.vue 配置中心

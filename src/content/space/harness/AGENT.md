@@ -59,7 +59,7 @@ AGI-WorkSpace/
 │   ├── lib/roles.ts                  ← 七角色 ID 与可写 slug，禁止删 ID
 │   ├── lib/content.ts                ← MD 加载；`catalog.docsNavTree` 排除 `space`
 │   ├── lib/git-sync.ts               ← 按 .gitignore 整仓 commit/push
-│   ├── views/SettingsView.vue        ← 配置中心（四块设置）
+│   ├── views/SettingsView.vue        ← 配置中心（含工作空间标识）
 │   └── views/DocView.vue             ← 唯一文档页
 └── dist/ node_modules/               ← 忽略，禁止提交
 ```
@@ -73,7 +73,7 @@ AGI-WorkSpace/
 
 **空间配置（侧栏单独一组，不进文档树）**
 
-1. **配置中心** `/settings`：角色范围、本地工作目录、代码空间、推送成功文案
+1. **配置中心** `/settings`：角色范围、工作空间标识（名称 / Logo / 口号）、本地工作目录、代码空间、推送成功文案
 2. **项目引用** `/space/references`
 3. **Harness 管理** `/space/harness` → 主要维护 `AGENT.md`
 
@@ -180,6 +180,7 @@ npm run build
 | 加一篇文档 | 优先在应用内按角色新建；或新 md + frontmatter；若新分类则加文件夹和 index.md |
 | 改侧栏空间配置 | `AppSidebar` + `space-nav.ts` + 对应 view/md |
 | 改推送成功文案 | `src/config/push-success.json` 或配置中心「推送成功文案」 |
+| 改名称 / Logo / 口号 | `src/config/branding.json`、`public/logo-*.png` 或配置中心「工作空间标识」 |
 | 改角色可写范围 | 同时改 `src/lib/roles.ts` 与 `src/content/project/roles.md` |
 | 修 Git 推送 | `git-sync.ts` / `handle-fs.ts` / `vite.config.ts` 代理，不要改回 Contents API 逐文件提交 |
 
@@ -190,7 +191,7 @@ npm run build
 - [ ] `project/overview.md`、`project/goals.md`、`project/status.md` 已换成当前项目
 - [ ] `project/roles.md` 对接人已填
 - [ ] 产品 / 设计 / 研发 / 质量 / 交付 / 记录中的占位已替换或标明仍待填
-- [ ] 配置中心：工作目录已授权，代码空间已绑定当前仓库
+- [ ] 配置中心：工作目录已授权，工作空间名称与 Logo 已换成当前项目，代码空间已绑定当前仓库
 - [ ] 本文件「1. 身份与目标」表格已更新
 - [ ] 根目录 `AGENT.md` 与 `src/content/space/harness/AGENT.md` 正文一致
 - [ ] `.gitignore` 仍排除令牌与构建产物

@@ -9,6 +9,7 @@ import { bindCatalogFocusSync, syncCatalogFromDisk } from './lib/catalog-sync'
 import { hydrateWorkspaceFs, onWorkspaceReady } from './lib/workspace-fs'
 import { hydrateRemoteGit } from './lib/remote-git'
 import { hydratePushCopy } from './lib/push-copy'
+import { hydrateBranding } from './lib/branding'
 import './styles/globals.css'
 
 applyTheme(readTheme())
@@ -19,11 +20,13 @@ void (async () => {
   await hydrateDocOverrides()
   onWorkspaceReady(() => {
     void syncCatalogFromDisk()
+    void hydrateBranding()
   })
   await hydrateWorkspaceFs()
   await syncCatalogFromDisk()
   bindCatalogFocusSync()
   await hydrateRemoteGit()
   await hydratePushCopy()
+  await hydrateBranding()
   createApp(App).use(router).mount('#app')
 })()

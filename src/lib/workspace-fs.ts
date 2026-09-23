@@ -265,6 +265,10 @@ function assertSafeRelPath(relPath: string) {
 }
 
 export async function writeRepoFile(relPath: string, text: string): Promise<void> {
+  await writeRepoBytes(relPath, new TextEncoder().encode(text))
+}
+
+export async function writeRepoBytes(relPath: string, data: BufferSource): Promise<void> {
   if (!rootHandle || status.value !== 'ready') throw new Error('NOT_READY')
   const parts = assertSafeRelPath(relPath)
   const fileName = parts.pop()!
@@ -274,7 +278,7 @@ export async function writeRepoFile(relPath: string, text: string): Promise<void
   }
   const file = await dir.getFileHandle(fileName, { create: true })
   const writable = await file.createWritable()
-  await writable.write(text)
+  await writable.write(data)
   await writable.close()
 }
 
@@ -332,6 +336,75 @@ export async function removeProjectFile(name: string): Promise<void> {
 
 export function getWorkspaceRoot(): FileSystemDirectoryHandle | null {
   return status.value === 'ready' ? rootHandle : null
+}
+
+const SKIP_REPO_DIRS = new Set([
+  'node_modules',
+  'dist',
+  '.git',
+  '.cursor',
+  '.vscode',
+  '.idea',
+  'terminals',
+])
+
+const TEXT_FILE_EXT = new Set([
+  '.md',
+  '.ts',
+  '.tsx',
+  '.vue',
+  '.json',
+  '.html',
+  '.txt',
+  '.css',
+  '.svg',
+  '.yml',
+  '.yaml',
+  '.js',
+  '.mjs',
+  '.cjs',
+  '.mdx',
+])
+
+const SKIP_REPO_FILES = new Set([
+  'package-lock.json',
+  '.agi-workspace.local.json',
+  'pnpm-lock.yaml',
+  'yarn.lock',
+])
+
+export async function rewriteRepoTextFiles(
+  mutate: (relPath: string, text: string) => string,
+): Promise<number> {
+  if (!rootHandle || status.value !== 'ready') throw new Error('NOT_READY')
+  let changed = 0
+
+  async function walk(dir: FileSystemDirectoryHandle, prefix: string) {
+    for await (const [name, handle] of dir.entries()) {
+      if (handle.kind === 'directory') {
+        if (name.startsWith('.') || SKIP_REPO_DIRS.has(name)) continue
+        await walk(handle as FileSystemDirectoryHandle, prefix ? `${prefix}/${name}` : name)
+        continue
+      }
+      if (SKIP_REPO_FILES.has(name) || name.startsWith('.')) continue
+      const dot = name.lastIndexOf('.')
+      const ext = dot >= 0 ? name.slice(dot).toLowerCase() : ''
+      if (!TEXT_FILE_EXT.has(ext)) continue
+      const relPath = prefix ? `${prefix}/${name}` : name
+      const file = await (handle as FileSystemFileHandle).getFile()
+      if (file.size > 1_500_000) continue
+      const text = await file.text()
+      const next = mutate(relPath, text)
+      if (next === text) continue
+      const writable = await (handle as FileSystemFileHandle).createWritable()
+      await writable.write(next)
+      await writable.close()
+      changed += 1
+    }
+  }
+
+  await walk(rootHandle, '')
+  return changed
 }
 
 export function useWorkspaceFs() {

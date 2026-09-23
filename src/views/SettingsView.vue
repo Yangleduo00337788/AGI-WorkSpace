@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { useI18n } from '@/composables/useI18n'
 import { useRoles } from '@/composables/useRoles'
 import { catalog, docsBySlug } from '@/lib/content'
+import { syncCatalogFromDisk } from '@/lib/catalog-sync'
 import { isSharedWritableSlug, ROLES, type RoleId } from '@/lib/roles'
 import { cn } from '@/lib/utils'
 import {
@@ -27,6 +28,11 @@ import {
   type PushCopyBundle,
 } from '@/lib/push-copy'
 import {
+  hydrateBranding,
+  saveBranding,
+  useBranding,
+} from '@/lib/branding'
+import {
   authorizeWorkspace,
   disconnectWorkspace,
   reconnectWorkspace,
@@ -36,7 +42,7 @@ import {
 const { locale, t } = useI18n()
 const route = useRoute()
 const { selected, ownedSlugs, toggle } = useRoles()
-const { status, folderName, error } = useWorkspaceFs()
+const { status, folderName, error, ready: fsReady } = useWorkspaceFs()
 const {
   status: remoteStatus,
   ready: remoteReady,
@@ -67,6 +73,7 @@ const autoPush = ref(true)
 const pushOpen = ref(false)
 const openRoles = ref(false)
 const openFolder = ref(false)
+const openBrand = ref(false)
 const openRemote = ref(false)
 const openCopy = ref(false)
 const { bundle: copyBundle } = usePushCopy()
@@ -75,6 +82,19 @@ const firstHintText = ref('')
 const copyLines = ref('')
 const copyMessage = ref('')
 const copyWorking = ref(false)
+const { branding, logoLightSrc, logoDarkSrc } = useBranding()
+const brandName = ref('')
+const brandSloganZh = ref('')
+const brandSloganEn = ref('')
+const brandIntroZh = ref('')
+const brandIntroEn = ref('')
+const brandSameLogo = ref(false)
+const lightBytes = ref<ArrayBuffer | null>(null)
+const darkBytes = ref<ArrayBuffer | null>(null)
+const lightPreview = ref('')
+const darkPreview = ref('')
+const brandWorking = ref(false)
+const brandMessage = ref('')
 
 watch(repoInput, (value) => {
   const detected = detectProviderFromRepo(value)
@@ -136,6 +156,7 @@ async function connect() {
     await authorizeWorkspace()
     await hydrateRemoteGit()
     await hydratePushCopy()
+    await hydrateBranding()
     message.value = t.value('settingsOk')
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') return
@@ -152,6 +173,7 @@ async function reconnect() {
     await reconnectWorkspace()
     await hydrateRemoteGit()
     await hydratePushCopy()
+    await hydrateBranding()
     message.value = t.value('settingsOk')
   } catch {
     message.value = t.value('settingsFail')
@@ -234,6 +256,70 @@ async function saveCopy() {
   }
 }
 
+watch(branding, (value) => {
+  brandName.value = value.name
+  brandSloganZh.value = value.sloganZh
+  brandSloganEn.value = value.sloganEn
+  brandIntroZh.value = value.introZh
+  brandIntroEn.value = value.introEn
+}, { immediate: true })
+
+function revokePreview(url: string) {
+  if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+}
+
+async function onLogoFile(kind: 'light' | 'dark', event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  const buffer = await file.arrayBuffer()
+  const preview = URL.createObjectURL(file)
+  if (kind === 'light') {
+    revokePreview(lightPreview.value)
+    lightBytes.value = buffer
+    lightPreview.value = preview
+    return
+  }
+  revokePreview(darkPreview.value)
+  darkBytes.value = buffer
+  darkPreview.value = preview
+}
+
+async function saveBrand() {
+  brandWorking.value = true
+  brandMessage.value = ''
+  try {
+    const light = lightBytes.value ?? undefined
+    const dark = brandSameLogo.value ? light ?? darkBytes.value ?? undefined : darkBytes.value ?? undefined
+    await saveBranding({
+      name: brandName.value,
+      sloganZh: brandSloganZh.value,
+      sloganEn: brandSloganEn.value,
+      introZh: brandIntroZh.value,
+      introEn: brandIntroEn.value,
+      light,
+      dark,
+    })
+    await syncCatalogFromDisk()
+    lightBytes.value = null
+    darkBytes.value = null
+    revokePreview(lightPreview.value)
+    revokePreview(darkPreview.value)
+    lightPreview.value = ''
+    darkPreview.value = ''
+    brandMessage.value = t.value('brandSaved')
+  } catch (err) {
+    const code = err instanceof Error ? err.message : ''
+    if (code === 'NOT_READY') brandMessage.value = t.value('brandNeedFolder')
+    else if (code === 'NAME_REQUIRED') brandMessage.value = t.value('brandNameRequired')
+    else if (code === 'LOGO_TOO_LARGE') brandMessage.value = t.value('brandLogoTooLarge')
+    else brandMessage.value = code || t.value('settingsFail')
+  } finally {
+    brandWorking.value = false
+  }
+}
+
 watch(
   [locale, copyBundle],
   () => {
@@ -253,6 +339,7 @@ watch(
     if (!id) return
     openRoles.value = id === 'roles'
     openFolder.value = id === 'folder'
+    openBrand.value = id === 'brand'
     openRemote.value = id === 'remote'
     openCopy.value = id === 'copy'
     await nextTick()
@@ -360,6 +447,68 @@ function tokenHelpHref() {
           </Button>
         </div>
         <p v-if="message" class="mt-3 text-sm text-muted-foreground">{{ message }}</p>
+      </SettingsPanel>
+
+      <SettingsPanel id="brand" v-model:open="openBrand" :title="t('brandTitle')" :hint="t('brandHint')">
+        <label class="mt-4 block text-xs text-muted-foreground">{{ t('brandName') }}</label>
+        <Input v-model="brandName" class="mt-1.5" maxlength="80" autocomplete="off" />
+
+        <label class="mt-4 block text-xs text-muted-foreground">{{ t('brandSloganZh') }}</label>
+        <Input v-model="brandSloganZh" class="mt-1.5" autocomplete="off" />
+
+        <label class="mt-4 block text-xs text-muted-foreground">{{ t('brandSloganEn') }}</label>
+        <Input v-model="brandSloganEn" class="mt-1.5" autocomplete="off" />
+
+        <label class="mt-4 block text-xs text-muted-foreground">{{ t('brandIntroZh') }}</label>
+        <textarea
+          v-model="brandIntroZh"
+          class="mt-1.5 min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
+
+        <label class="mt-4 block text-xs text-muted-foreground">{{ t('brandIntroEn') }}</label>
+        <textarea
+          v-model="brandIntroEn"
+          class="mt-1.5 min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
+
+        <p class="mt-4 text-xs leading-5 text-muted-foreground">{{ t('brandLogoHint') }}</p>
+        <div class="mt-3 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="block text-xs text-muted-foreground">{{ t('brandLogoLight') }}</label>
+            <img :src="lightPreview || logoLightSrc" :alt="t('brandLogoLight')" class="mt-2 h-12 w-auto max-w-full object-contain" />
+            <input
+              class="mt-2 block w-full text-xs text-muted-foreground file:mr-2 file:rounded-md file:border-0 file:bg-secondary file:px-2 file:py-1 file:text-xs"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              @change="onLogoFile('light', $event)"
+            />
+          </div>
+          <div>
+            <label class="block text-xs text-muted-foreground">{{ t('brandLogoDark') }}</label>
+            <img
+              :src="brandSameLogo ? lightPreview || logoLightSrc : darkPreview || logoDarkSrc"
+              :alt="t('brandLogoDark')"
+              class="mt-2 h-12 w-auto max-w-full object-contain"
+            />
+            <input
+              class="mt-2 block w-full text-xs text-muted-foreground file:mr-2 file:rounded-md file:border-0 file:bg-secondary file:px-2 file:py-1 file:text-xs"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              :disabled="brandSameLogo"
+              @change="onLogoFile('dark', $event)"
+            />
+          </div>
+        </div>
+        <label class="mt-3 flex cursor-pointer items-center gap-2 text-sm">
+          <input v-model="brandSameLogo" type="checkbox" class="size-4 accent-foreground" />
+          {{ t('brandSameLogo') }}
+        </label>
+
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <Button size="sm" :disabled="brandWorking || !fsReady" @click="saveBrand">{{ t('brandSave') }}</Button>
+          <p v-if="!fsReady" class="text-sm text-muted-foreground">{{ t('brandNeedFolder') }}</p>
+          <p v-else-if="brandMessage" class="text-sm text-muted-foreground">{{ brandMessage }}</p>
+        </div>
       </SettingsPanel>
 
       <SettingsPanel id="remote" v-model:open="openRemote" :title="t('remoteTitle')" :hint="t('remoteHint')">

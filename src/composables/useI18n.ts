@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { messages, type Locale, type MessageKey } from '@/i18n/messages'
+import { introFor, sloganFor, workspaceName } from '@/lib/branding'
 
 const STORAGE_KEY = 'agi-locale'
 
@@ -13,8 +14,16 @@ const locale = ref<Locale>(readLocale())
 
 export function useI18n() {
   const t = computed(() => {
+    const name = workspaceName()
+    const slogan = sloganFor(locale.value)
+    const intro = introFor(locale.value)
     const table = messages[locale.value]
-    return (key: MessageKey) => table[key]
+    return (key: MessageKey) => {
+      if (key === 'product') return name || table.product
+      if (key === 'homeSlogan') return slogan || table.homeSlogan
+      if (key === 'homeIntro') return intro || table.homeIntro
+      return table[key]
+    }
   })
 
   function setLocale(next: Locale) {

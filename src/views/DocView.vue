@@ -28,6 +28,7 @@ import DocVisualEditor from '@/components/DocVisualEditor.vue'
 import DocCreateDialog from '@/components/DocCreateDialog.vue'
 import { Button } from '@/components/ui/button'
 import { useRoles } from '@/composables/useRoles'
+import { workspaceName } from '@/lib/branding'
 import { renderMarkdown, type TocItem } from '@/lib/markdown'
 import { messages } from '@/i18n/messages'
 
@@ -290,9 +291,10 @@ watch(pendingEditSlug, () => {
 })
 
 watch(
-  () => doc.value?.title,
-  (title) => {
-    document.title = title ? `${title} · AGI-WorkSpace` : 'AGI-WorkSpace'
+  () => [doc.value?.title, workspaceName()] as const,
+  ([title]) => {
+    const product = workspaceName()
+    document.title = title ? `${title} · ${product}` : product
   },
   { immediate: true },
 )

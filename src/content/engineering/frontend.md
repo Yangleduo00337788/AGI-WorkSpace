@@ -23,7 +23,7 @@ FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/ha
 | 路径 | 页面 | 说明 |
 | --- | --- | --- |
 | `/` | 项目首页 | `src/content/index.md` |
-| `/settings` | 配置中心 | 角色、工作目录、代码空间、推送文案 |
+| `/settings` | 配置中心 | 角色、标识、工作目录、代码空间、推送文案 |
 | `/space/references` | 项目引用 | 空间配置 Markdown |
 | `/space/harness` | Harness 管理 | 含 AGENT.md |
 | `/{slug}` | 文档 | 与 MD 路径对应 |
@@ -36,6 +36,7 @@ FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/ha
 | 工作目录 | 全局 | IndexedDB handle | 用户授权 |
 | 文档目录 | 全局 | 磁盘 `src/content`（授权后） | 保存 / 新建 / 删除 / 窗口重新聚焦 |
 | 文档覆盖 | 文档 | IndexedDB + 磁盘 MD | 有写权限的角色 |
+| 标识 | 全局 | `src/config/branding.json` + `public/logo-*.png` | 配置中心「工作空间标识」 |
 | 代码空间 | 全局 | 本机 `.agi-workspace.local.json` | 配置中心绑定 |
 | 主题 / 语言 | 全局 | localStorage | 顶栏切换 |
 
