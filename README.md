@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="public/favicon.svg" alt="AGI-WorkSpace" width="88" height="88" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/logo-dark.png" />
+    <img src="public/logo-light.png" alt="AGI-WorkSpace" width="360" />
+  </picture>
 </p>
 
 <h1 align="center">AGI-WorkSpace</h1>
@@ -12,15 +15,22 @@
 </p>
 
 <p align="center">
-  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-1c1c22" />
-  <img alt="Vue 3" src="https://img.shields.io/badge/Vue-3-42b883" />
-  <img alt="Vite" src="https://img.shields.io/badge/Vite-static-646cff" />
-  <img alt="No backend" src="https://img.shields.io/badge/backend-none-6b7280" />
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-1c1c22?style=flat-square" /></a>
+  <img alt="Vue 3" src="https://img.shields.io/badge/Vue-3-42b883?style=flat-square&logo=vuedotjs&logoColor=white" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white" />
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-static-646cff?style=flat-square&logo=vite&logoColor=white" />
+  <img alt="Markdown" src="https://img.shields.io/badge/facts-Markdown-000000?style=flat-square&logo=markdown&logoColor=white" />
+  <img alt="No backend" src="https://img.shields.io/badge/backend-none-6b7280?style=flat-square" />
+  <img alt="Agent ready" src="https://img.shields.io/badge/Agent-Cursor%20%7C%20Codex%20%7C%20Trae%20%7C%20Qoder-1c1c22?style=flat-square" />
+  <a href="https://gitee.com/yangleduo7788/agi-work-space"><img alt="Gitee stars" src="https://gitee.com/yangleduo7788/agi-work-space/badge/star.svg?theme=dark" /></a>
+  <a href="https://gitee.com/yangleduo7788/agi-work-space"><img alt="Gitee forks" src="https://gitee.com/yangleduo7788/agi-work-space/badge/fork.svg?theme=dark" /></a>
 </p>
 
 <p align="center">
   <a href="#为什么和以前不一样">为什么不一样</a> ·
-  <a href="#工作方式">工作方式</a> ·
+  <a href="#架构">架构</a> ·
+  <a href="#协作流程">流程</a> ·
+  <a href="#角色怎么切开">角色</a> ·
   <a href="#30-秒上手">上手</a> ·
   <a href="#开源">开源</a>
 </p>
@@ -51,23 +61,73 @@ Vue 只是阅读和写回的壳。项目是什么、谁负责、接口怎么定�
 
 没有自建后端、没有 CMS、没有账号系统。权限是七个角色勾选，写进 `src/config/workspace-roles.json`，Agent 看得见谁被允许动手。
 
-## 工作方式
+## 架构
 
-```text
-团队 / 个人 在浏览器里按角色改文档
-                 ↓
-         保存进 src/content（Git）
-                 ↓
-Agent（Cursor / Codex / Trae / Qoder …）
-先读根目录 AGENTS.md + 角色 JSON + 项目文档
-                 ↓
-只在已勾选角色范围内改文档或写实现
-                 ↓
-开发完成应对齐这份工作空间
-若干年后迭代、维护、重启：仍先读这里，而不是先翻代码
+纯前端静态仓：壳负责读和写，事实只在 Markdown 与 Git。
+
+```mermaid
+flowchart TB
+  subgraph shell ["Vue 壳 · 不承载业务事实"]
+    UI["配置中心 / 文档预览 / 搜索"]
+  end
+
+  subgraph repo ["Git 仓库 · 单一事实来源"]
+    MD["src/content/**/*.md"]
+    Roles["src/config/workspace-roles.json"]
+    H["根目录 AGENTS.md"]
+    Brand["名称 · Logo · 口号"]
+  end
+
+  subgraph people ["人"]
+    Team["团队 / 个人"]
+  end
+
+  subgraph agents ["Agent"]
+    Bot["Cursor / Codex / Trae / Qoder"]
+  end
+
+  Team -->|"勾选角色、改文档"| UI
+  UI -->|"写回磁盘"| MD
+  UI --> Roles
+  UI --> Brand
+  Bot -->|"必读"| H
+  Bot --> Roles
+  Bot --> MD
+  Bot -->|"按文档实现"| Impl["业务代码应对齐文档"]
+  Impl -.->|"若干年后仍先读这里"| MD
+```
+
+## 协作流程
+
+```mermaid
+flowchart LR
+  A["1. 克隆模板"] --> B["2. 换成当前项目"]
+  B --> C["3. 配置中心勾选角色"]
+  C --> D["4. 人按职责写 Markdown"]
+  D --> E["5. Agent 读 AGENTS.md"]
+  E --> F["6. 只改已勾选范围"]
+  F --> G["7. 实现与文档一致"]
+  G --> H["8. 多年后仍从 Workspace 接手"]
 ```
 
 Harness 约束在根目录 [`AGENTS.md`](./AGENTS.md)（与网页里 Harness 那一份同步）。换项目只换文档和第 1 节表格，不改角色 ID，不为每篇文档拆路由。
+
+## 角色怎么切开
+
+```mermaid
+flowchart TB
+  W["一份 Workspace"]
+  W --> S["开始阅读 · 任意已选角色"]
+  W --> PM["PM · 产品 / 概述 / 目标"]
+  W --> UIUE["UIUE · 设计"]
+  W --> RD["RD · 架构 / 契约 / 领域"]
+  W --> FE["FE · 前端结构"]
+  W --> QA["QA · 质量"]
+  W --> OP["OP · 运维"]
+  W --> POM["POM · 交付 / 状态 / 决策"]
+```
+
+未勾选的角色：**可读、不能写**。Agent 碰到未勾选范围会停手，提示先去 Workspace 勾选。
 
 ## 30 秒上手
 
@@ -78,7 +138,7 @@ npm install
 npm run dev
 ```
 
-打开后到 **空间配置 → 配置中心**：勾选角色、授权含 `src/content` 的项目根目录。需要同步远程时再绑定代码空间。
+打开后到 **空间配置 → 配置中心**：勾选角色、授权含 `src/content` 的项目根目录、按需更换 Logo。需要同步远程时再绑定代码空间。
 
 ```bash
 npm run build
@@ -92,6 +152,7 @@ npm run preview
 - Frontmatter：`title`、`order`、`description`
 - `src/content/space/` 是空间配置，不进「文档」树
 - 角色勾选实时写入 `src/config/workspace-roles.json`
+- Logo：`public/logo-light.png`、`public/logo-dark.png`
 
 把模板占位换成**当前项目**。一份完整、可重启的知识，属于每一个用这份模板起的 Workspace 实例。
 
