@@ -122,10 +122,17 @@ watch(
   <ul class="flex flex-col gap-0.5" :style="{ paddingLeft: depth ? '0.7rem' : '0' }">
     <li v-for="node in nodes" :key="node.id">
       <div v-if="isFolderNode(node)" class="flex flex-col">
-        <div class="group/nav flex items-center">
+        <div
+          class="group/nav flex items-center rounded-md transition-colors"
+          :class="
+            isActive(node.slug)
+              ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+              : 'hover:bg-sidebar-accent/70'
+          "
+        >
           <button
             type="button"
-            class="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            class="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-sidebar-accent-foreground"
             :aria-expanded="openIds.has(node.id)"
             :aria-label="node.title"
             @click.stop="toggle(node.id)"
@@ -140,11 +147,11 @@ watch(
             :to="node.slug ? `/${node.slug}` : '/'"
             :class="
               cn(
-                'flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] leading-5 transition-colors',
+                'flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-[13px] leading-5',
                 !isOwned(node) && 'opacity-45',
                 isActive(node.slug)
-                  ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
+                  ? 'text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/80 hover:text-sidebar-accent-foreground',
               )
             "
             @click="onFolderTitleClick($event, node)"
@@ -156,7 +163,7 @@ watch(
           <button
             v-else
             type="button"
-            class="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[13px] font-medium leading-5 text-sidebar-foreground/90 transition-colors hover:bg-sidebar-accent/70"
+            class="flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-left text-[13px] font-medium leading-5 text-sidebar-foreground/90"
             @click="toggle(node.id)"
           >
             <FolderOpen v-if="openIds.has(node.id)" class="size-3.5 shrink-0 text-muted-foreground" />
@@ -165,13 +172,13 @@ watch(
           </button>
           <div
             v-if="canEditNode(node) || createParent(node)"
-            class="flex shrink-0 opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100"
+            class="flex shrink-0 pr-0.5 opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100"
             :class="isActive(node.slug) ? 'opacity-100' : ''"
           >
             <button
               v-if="canEditNode(node)"
               type="button"
-              class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
               :title="t('editDoc')"
               :aria-label="t('editDoc')"
               @click="onEdit($event, node)"
@@ -181,7 +188,7 @@ watch(
             <button
               v-if="createParent(node)"
               type="button"
-              class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
               :title="t('newDoc')"
               :aria-label="t('newDoc')"
               @click="onCreate($event, node)"
@@ -209,18 +216,23 @@ watch(
       </div>
       <div
         v-else-if="node.slug !== undefined"
-        class="group/nav flex items-center"
-        :class="depth ? 'ml-7' : 'ml-0'"
+        class="group/nav flex items-center rounded-md transition-colors"
+        :class="[
+          depth ? 'ml-7' : 'ml-0',
+          isActive(node.slug)
+            ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+            : 'hover:bg-sidebar-accent/70',
+        ]"
       >
         <RouterLink
           :to="node.slug ? `/${node.slug}` : '/'"
           :class="
             cn(
-              'flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] leading-5 transition-colors',
+              'flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-[13px] leading-5',
               !isOwned(node) && 'opacity-45',
               isActive(node.slug)
-                ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
-                : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
+                ? 'text-sidebar-accent-foreground'
+                : 'text-sidebar-foreground/75 hover:text-sidebar-accent-foreground',
             )
           "
           @click="emit('navigate')"
@@ -230,13 +242,13 @@ watch(
         </RouterLink>
         <div
           v-if="canEditNode(node) || createParent(node)"
-          class="flex shrink-0 opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100"
+          class="flex shrink-0 pr-0.5 opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100"
           :class="isActive(node.slug) ? 'opacity-100' : ''"
         >
           <button
             v-if="canEditNode(node)"
             type="button"
-            class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
             :title="t('editDoc')"
             :aria-label="t('editDoc')"
             @click="onEdit($event, node)"
@@ -246,7 +258,7 @@ watch(
           <button
             v-if="createParent(node)"
             type="button"
-            class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
             :title="t('newDoc')"
             :aria-label="t('newDoc')"
             @click="onCreate($event, node)"

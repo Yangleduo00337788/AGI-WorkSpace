@@ -124,10 +124,13 @@ async function onCreate(payload: {
         @edit="openEdit"
       />
       <div class="mt-0.5 flex flex-col">
-        <div class="flex items-center">
+        <div
+          class="flex items-center rounded-md transition-colors hover:bg-sidebar-accent/70"
+          :class="onSpace ? 'font-medium' : ''"
+        >
           <button
             type="button"
-            class="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            class="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-sidebar-accent-foreground"
             :aria-expanded="spaceOpen"
             :aria-label="t('settingsNav')"
             @click.stop="toggleSpace"
@@ -141,10 +144,10 @@ async function onCreate(payload: {
             to="/settings"
             :class="
               cn(
-                'flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] leading-5 transition-colors',
+                'flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-[13px] leading-5',
                 onSpace
-                  ? 'font-medium text-sidebar-accent-foreground hover:bg-sidebar-accent/70'
-                  : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
+                  ? 'text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/80 hover:text-sidebar-accent-foreground',
               )
             "
             @click="onSpaceTitleClick($event)"
@@ -161,15 +164,22 @@ async function onCreate(payload: {
             <div class="mt-0.5 ml-3.5 border-l border-sidebar-border/80">
               <ul class="flex flex-col gap-0.5" style="padding-left: 0.7rem">
                 <li v-for="item in SPACE_NAV_ITEMS" :key="item.id">
-                  <div class="group/nav flex items-center">
+                  <div
+                    class="group/nav ml-7 flex items-center rounded-md transition-colors"
+                    :class="
+                      activeId === item.id
+                        ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                        : 'hover:bg-sidebar-accent/70'
+                    "
+                  >
                     <RouterLink
                       :to="item.to"
                       :class="
                         cn(
-                          'ml-7 flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] leading-5 transition-colors',
+                          'flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-[13px] leading-5',
                           activeId === item.id
-                            ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
-                            : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
+                            ? 'text-sidebar-accent-foreground'
+                            : 'text-sidebar-foreground/75 hover:text-sidebar-accent-foreground',
                         )
                       "
                       @click="emit('navigate')"
@@ -179,13 +189,13 @@ async function onCreate(payload: {
                     </RouterLink>
                     <div
                       v-if="anyRole && (canEditSpace(item.to) || canCreateSpace(item.to))"
-                      class="flex shrink-0 opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100"
+                      class="flex shrink-0 pr-0.5 opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100"
                       :class="activeId === item.id ? 'opacity-100' : ''"
                     >
                       <button
                         v-if="canEditSpace(item.to)"
                         type="button"
-                        class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
                         :title="t('editDoc')"
                         :aria-label="t('editDoc')"
                         @click.stop="openEdit(spaceSlug(item.to))"
@@ -195,7 +205,7 @@ async function onCreate(payload: {
                       <button
                         v-if="canCreateSpace(item.to)"
                         type="button"
-                        class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
                         :title="t('newDoc')"
                         :aria-label="t('newDoc')"
                         @click.stop="openCreate(spaceSlug(item.to))"
