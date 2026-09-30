@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { ChevronRight, FileText, LayoutGrid, Pencil, Plus } from 'lucide-vue-next'
+import { ChevronRight, FileText, Folder, FolderOpen, Pencil, Plus } from 'lucide-vue-next'
 import { catalog } from '@/lib/content'
 import { canCreateIn, canEditSlug, createWorkspaceDoc } from '@/lib/doc-manage'
 import { pendingEditSlug } from '@/lib/doc-session'
@@ -152,7 +152,8 @@ async function onCreate(payload: {
             "
             @click="onSpaceTitleClick($event)"
           >
-            <LayoutGrid class="size-3.5 shrink-0 text-muted-foreground" />
+            <FolderOpen v-if="spaceOpen" class="size-3.5 shrink-0 text-muted-foreground" />
+            <Folder v-else class="size-3.5 shrink-0 text-muted-foreground" />
             <span class="truncate">{{ t('settingsNav') }}</span>
           </RouterLink>
         </div>

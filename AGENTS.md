@@ -40,13 +40,13 @@ AGI-WorkSpace/
 ├── package.json
 ├── vite.config.ts                    ← 含 Git 远程代理
 ├── src/
-│   ├── content/                      ← 文档树（会出现在侧栏「文档」）
+│   ├── content/                      ← 文档树（会出现在侧栏「文档目录」）
 │   │   ├── index.md                  ← 项目首页（导航挂在「开始阅读」下）
 │   │   ├── start/                    ← 开始阅读
 │   │   ├── project/ product/ design/
 │   │   ├── engineering/ quality/
 │   │   ├── delivery/ records/
-│   │   └── space/                    ← 空间配置文档（不进「文档」树）
+│   │   └── space/                    ← 空间配置文档（不进「文档目录」树）
 │   │       ├── references.md         ← 项目引用
 │   │       └── harness/
 │   │           ├── index.md          ← Harness 管理入口
@@ -62,10 +62,10 @@ AGI-WorkSpace/
 
 ## 4. 信息架构（侧栏）
 
-**文档（`catalog.docsNavTree`）**
+**文档目录（`catalog.docsNavTree`）**
 
 - 开始阅读（项目首页、项目介绍、新范式、WorkSpace 指南）
-- 项目 / 产品 / 设计 / 研发 / 质量 / 交付 / 记录
+- 项目总览 / 产品设计 / 体验设计 / 研发设计 / 质量保障 / 交付运维 / 过程记录
 
 **空间配置（侧栏单独一组，不进文档树）**
 
@@ -73,7 +73,7 @@ AGI-WorkSpace/
 2. **项目引用** `/space/references`
 3. **Harness 管理** `/space/harness` → 主要维护 `AGENTS.md`
 
-禁止把 `src/content/space/` 做进「文档」导航。`src/lib/content.ts` 里必须保持 `catalog.docsNavTree` 过滤 `id === 'space'`。授权本地工作目录后，导航以磁盘上的 Markdown 为准（窗口重新聚焦会再扫一遍），不要只依赖构建时打包的文件。
+禁止把 `src/content/space/` 做进「文档目录」导航。`src/lib/content.ts` 里必须保持 `catalog.docsNavTree` 过滤 `id === 'space'`。授权本地工作目录后，导航以磁盘上的 Markdown 为准（窗口重新聚焦会再扫一遍），不要只依赖构建时打包的文件。
 
 ## 5. 七个角色（ID 锁定）
 
@@ -191,7 +191,7 @@ npm run build
 
 - [ ] `project/overview.md`、`project/goals.md`、`project/status.md` 已换成当前项目
 - [ ] `project/roles.md` 对接人已填
-- [ ] 产品 / 设计 / 研发 / 质量 / 交付 / 记录中的占位已替换或标明仍待填
+- [ ] 产品设计 / 体验设计 / 研发设计 / 质量保障 / 交付运维 / 过程记录中的占位已替换或标明仍待填
 - [ ] 配置中心：工作目录已授权，工作空间名称与 Logo 已换成当前项目，代码空间已绑定当前仓库
 - [ ] 本文件「1. 身份与目标」表格已更新
 - [ ] 根目录 `AGENTS.md` 与 `src/content/space/harness/AGENTS.md` 正文一致

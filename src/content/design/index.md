@@ -1,5 +1,5 @@
 ---
-title: 设计
+title: 体验设计
 description: 体验原则、视觉规范、交互稿与设计交付
 order: 30
 ---

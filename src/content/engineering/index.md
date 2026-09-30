@@ -1,5 +1,5 @@
 ---
-title: 研发
+title: 研发设计
 description: 架构、契约、领域、规范与前端结构
 order: 40
 ---

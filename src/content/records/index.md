@@ -1,5 +1,5 @@
 ---
-title: 记录
+title: 过程记录
 description: 决策与重要过程
 order: 70
 ---

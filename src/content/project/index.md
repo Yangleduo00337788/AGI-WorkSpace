@@ -1,5 +1,5 @@
 ---
-title: 项目
+title: 项目总览
 description: 概述、目标、角色与状态
 order: 10
 ---

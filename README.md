@@ -145,10 +145,10 @@ npm run preview
 
 ## 仓库里放什么
 
-- 文件夹 = 侧栏分类（开始阅读 / 项目 / 产品 / 设计 / 研发 / 质量 / 交付 / 记录）
+- 文件夹 = 侧栏分类（开始阅读 / 项目总览 / 产品设计 / 体验设计 / 研发设计 / 质量保障 / 交付运维 / 过程记录）
 - `.md` = 一篇文档；`index.md` 是分类入口
 - Frontmatter：`title`、`order`、`description`
-- `src/content/space/` 是空间配置，不进「文档」树
+- `src/content/space/` 是空间配置，不进「文档目录」树
 - 角色勾选实时写入 `src/config/workspace-roles.json`
 - Logo：`public/logo-light.png`、`public/logo-dark.png`
 
