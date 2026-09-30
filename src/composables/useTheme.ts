@@ -16,4 +16,5 @@ export function readTheme(): Theme {
 export function persistTheme(theme: Theme) {
   localStorage.setItem(STORAGE_KEY, theme)
   applyTheme(theme)
+  window.dispatchEvent(new Event('agi-theme'))
 }

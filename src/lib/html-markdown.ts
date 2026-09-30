@@ -41,6 +41,16 @@ export function markdownToEditableHtml(source: string): string {
   createContainer(md, 'warning', 'WARNING')
   createContainer(md, 'danger', 'DANGER')
 
+  const defaultFence = md.renderer.rules.fence?.bind(md.renderer)
+  md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+    const token = tokens[idx]!
+    const lang = token.info.trim().split(/\s+/)[0] ?? ''
+    if (lang === 'mermaid' || lang === 'mmd') {
+      return `<pre class="mermaid-source"><code class="language-mermaid">${escapeHtml(token.content)}</code></pre>\n`
+    }
+    return defaultFence ? defaultFence(tokens, idx, options, env, self) : self.renderToken(tokens, idx, options)
+  }
+
   const defaultTableOpen = md.renderer.rules.table_open?.bind(md.renderer)
   const defaultTableClose = md.renderer.rules.table_close?.bind(md.renderer)
   md.renderer.rules.table_open = (tokens, idx, options, env, self) => {
@@ -101,6 +111,19 @@ export function editableHtmlToMarkdown(html: string): string {
     bulletListMarker: '-',
     emDelimiter: '*',
     hr: '---',
+  })
+
+  turndown.addRule('mermaidSource', {
+    filter: (node) => {
+      if (!(node instanceof HTMLElement)) return false
+      if (node.classList.contains('mermaid-source') || node.classList.contains('mermaid')) return true
+      return node.tagName === 'PRE' && Boolean(node.querySelector('code.language-mermaid, code.language-mmd'))
+    },
+    replacement(_content, node) {
+      const el = node as HTMLElement
+      const code = (el.querySelector('code')?.textContent ?? el.textContent ?? '').trim()
+      return `\n\n\`\`\`mermaid\n${code}\n\`\`\`\n\n`
+    },
   })
 
   turndown.addRule('contentImage', {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/composables/useI18n'
 import {
@@ -9,6 +9,7 @@ import {
   relativeFromDoc,
 } from '@/lib/content-images'
 import { editableHtmlToMarkdown, markdownToEditableHtml } from '@/lib/html-markdown'
+import { extractMermaidBlocks, renderMermaidSources } from '@/lib/mermaid-render'
 import { useWorkspaceFs, writeWorkspaceBytes } from '@/lib/workspace-fs'
 
 const props = defineProps<{
@@ -26,6 +27,8 @@ const { ready: fsReady } = useWorkspaceFs()
 const editor = ref<HTMLElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const imageMessage = ref('')
+const mermaidHost = ref<HTMLElement | null>(null)
+let mermaidTimer = 0
 
 function syncFromMarkdown(source: string) {
   if (!editor.value) return
@@ -39,6 +42,7 @@ function currentMarkdown() {
 
 function emitMarkdown() {
   emit('update:modelValue', currentMarkdown())
+  scheduleMermaidPreview()
 }
 
 function run(command: string, value?: string) {
@@ -119,6 +123,24 @@ function pickImage() {
   fileInput.value?.click()
 }
 
+function insertMermaid() {
+  editor.value?.focus()
+  document.execCommand(
+    'insertHTML',
+    false,
+    '<pre class="mermaid-source"><code class="language-mermaid">flowchart TD\n  A[开始] --&gt; B[结束]</code></pre><p></p>',
+  )
+  emitMarkdown()
+}
+
+function scheduleMermaidPreview() {
+  window.clearTimeout(mermaidTimer)
+  mermaidTimer = window.setTimeout(() => {
+    const codes = extractMermaidBlocks(currentMarkdown())
+    void renderMermaidSources(codes, mermaidHost.value)
+  }, 450)
+}
+
 function onFilePicked(event: Event) {
   const input = event.target as HTMLInputElement
   const files = [...(input.files ?? [])]
@@ -128,6 +150,13 @@ function onFilePicked(event: Event) {
 
 onMounted(() => {
   syncFromMarkdown(props.modelValue)
+  scheduleMermaidPreview()
+  window.addEventListener('agi-theme', scheduleMermaidPreview)
+})
+
+onUnmounted(() => {
+  window.clearTimeout(mermaidTimer)
+  window.removeEventListener('agi-theme', scheduleMermaidPreview)
 })
 
 watch(
@@ -137,6 +166,7 @@ watch(
     if (document.activeElement === editor.value) return
     if (currentMarkdown() === value) return
     syncFromMarkdown(value)
+    scheduleMermaidPreview()
   },
 )
 
@@ -160,6 +190,7 @@ defineExpose({
       <Button type="button" size="sm" variant="ghost" @click="insertTable">{{ t('fmtTable') }}</Button>
       <Button type="button" size="sm" variant="ghost" @click="insertLink">{{ t('fmtLink') }}</Button>
       <Button type="button" size="sm" variant="ghost" @click="pickImage">{{ t('fmtImage') }}</Button>
+      <Button type="button" size="sm" variant="ghost" @click="insertMermaid">{{ t('fmtMermaid') }}</Button>
     </div>
     <p class="mt-2 text-xs text-muted-foreground">{{ t('editHint') }}</p>
     <p v-if="imageMessage" class="mt-1 text-xs text-muted-foreground">{{ imageMessage }}</p>
@@ -177,5 +208,7 @@ defineExpose({
       @keydown.ctrl.s.prevent="emit('save')"
       @keydown.meta.s.prevent="emit('save')"
     />
+    <p class="mt-4 text-xs text-muted-foreground">{{ t('mermaidPreviewHint') }}</p>
+    <div ref="mermaidHost" class="mermaid-live mt-2 space-y-3" />
   </div>
 </template>

@@ -212,6 +212,10 @@ export async function renderMarkdown(
   md.renderer.rules.fence = (tokens, idx, options, env, self) => {
     const token = tokens[idx]!
     const lang = token.info.trim().split(/\s+/)[0] ?? ''
+    if (lang === 'mermaid' || lang === 'mmd') {
+      const code = token.content.trim()
+      return `<div class="mermaid-wrap" data-source="${encodeURIComponent(code)}"><pre class="mermaid">${escapeHtml(code)}</pre></div>\n`
+    }
     const raw = defaultFence ? defaultFence(tokens, idx, options, env, self) : escapeHtml(token.content)
     const encoded = encodeURIComponent(token.content)
     const langAttr = lang ? ` data-lang="${escapeHtml(lang)}"` : ''

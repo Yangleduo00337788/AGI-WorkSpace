@@ -484,6 +484,27 @@ html.dark .shiki span {
   color: var(--foreground);
 }
 
+.mermaid-wrap,
+.mermaid-preview-item {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
+.mermaid-wrap svg,
+.mermaid-preview-item svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.editor-surface pre.mermaid-source {
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  overflow-x: auto;
+  font-size: 0.8125rem;
+}
+
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
