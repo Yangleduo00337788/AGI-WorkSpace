@@ -1,11 +1,12 @@
 const DB_NAME = 'agi-kb'
-const DB_VERSION = 3
+const DB_VERSION = 4
 
 export const STORE_OVERRIDES = 'md-overrides'
 export const STORE_HANDLES = 'handles'
 export const STORE_REMOTE = 'remote-git'
+export const STORE_DRAFTS = 'md-drafts'
 
-const REQUIRED_STORES = [STORE_OVERRIDES, STORE_HANDLES, STORE_REMOTE] as const
+const REQUIRED_STORES = [STORE_OVERRIDES, STORE_HANDLES, STORE_REMOTE, STORE_DRAFTS] as const
 
 function ensureStores(db: IDBDatabase) {
   for (const name of REQUIRED_STORES) {
