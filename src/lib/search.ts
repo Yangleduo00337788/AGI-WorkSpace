@@ -1,5 +1,5 @@
 import MiniSearch from 'minisearch'
-import { catalog, type DocEntry } from '@/lib/content'
+import { catalog, isBrowsableDoc, type DocEntry } from '@/lib/content'
 import { stripMarkdown } from '@/lib/markdown'
 
 const engine = new MiniSearch({
@@ -24,7 +24,7 @@ function toRecord(doc: DocEntry) {
 
 export function reindexAll() {
   engine.removeAll()
-  engine.addAll(catalog.docs.map(toRecord))
+  engine.addAll(catalog.docs.filter(isBrowsableDoc).map(toRecord))
 }
 
 reindexAll()
@@ -48,6 +48,7 @@ export function searchDocs(query: string): SearchHit[] {
 export function reindexDoc(doc: DocEntry) {
   const id = doc.slug || 'index'
   if (engine.has(id)) engine.discard(id)
+  if (!isBrowsableDoc(doc)) return
   engine.add(toRecord(doc))
 }
 

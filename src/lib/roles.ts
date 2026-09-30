@@ -19,7 +19,7 @@ export const ROLES: RoleDef[] = [
     titleEn: 'Engineering',
     descZh: '技术方案、接口契约、领域设计和研发协作记录',
     descEn: 'Architecture, API contracts, domain design, and engineering notes',
-    slugs: ['engineering', 'engineering/architecture', 'engineering/conventions', 'engineering/contracts', 'engineering/domain', 'engineering/collab'],
+    slugs: ['engineering', 'engineering/tech', 'engineering/tech/architecture', 'engineering/tech/domain', 'engineering/process', 'engineering/process/conventions', 'engineering/process/contracts', 'engineering/process/collab'],
   },
   {
     id: 'fe',
@@ -37,7 +37,7 @@ export const ROLES: RoleDef[] = [
     titleEn: 'Product',
     descZh: '用户场景、PRD、业务流程、思维导图、交互原型、排期图与验收标准',
     descEn: 'Scenarios, PRD, flows, prototypes, schedule, and acceptance',
-    slugs: ['product', 'product/definition', 'product/users', 'product/prd', 'product/prototypes', 'project/overview', 'project/goals'],
+    slugs: ['product', 'product/definition', 'product/discovery', 'product/discovery/users', 'product/spec', 'product/spec/prd', 'product/spec/prototypes', 'project/charter', 'project/charter/overview', 'project/charter/goals'],
   },
   {
     id: 'qa',
@@ -46,7 +46,7 @@ export const ROLES: RoleDef[] = [
     titleEn: 'QA',
     descZh: '测试计划、用例、执行证据和缺陷记录',
     descEn: 'Test plans, cases, evidence, and defect logs',
-    slugs: ['quality', 'quality/testing', 'quality/cases', 'quality/evidence', 'quality/defects'],
+    slugs: ['quality', 'quality/plan', 'quality/plan/testing', 'quality/run', 'quality/run/cases', 'quality/run/evidence', 'quality/run/defects'],
   },
   {
     id: 'op',
@@ -64,7 +64,7 @@ export const ROLES: RoleDef[] = [
     titleEn: 'Design',
     descZh: '视觉规范、交互稿、体验说明和设计交付',
     descEn: 'Visual specs, interaction drafts, UX notes, and design handoff',
-    slugs: ['design', 'design/experience', 'design/specs', 'design/handoff'],
+    slugs: ['design', 'design/system', 'design/system/experience', 'design/system/specs', 'design/handoff'],
   },
   {
     id: 'pom',
@@ -73,7 +73,7 @@ export const ROLES: RoleDef[] = [
     titleEn: 'Program',
     descZh: '里程碑、依赖、风险、进度和跨角色交接',
     descEn: 'Milestones, dependencies, risks, progress, and handoff',
-    slugs: ['delivery', 'delivery/management', 'project/roles', 'project/status', 'records', 'records/decisions'],
+    slugs: ['delivery', 'delivery/management', 'project/governance', 'project/governance/roles', 'project/governance/status', 'records', 'records/decisions'],
   },
 ]
 

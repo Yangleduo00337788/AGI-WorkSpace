@@ -24,7 +24,7 @@ PM 维护。场景写到「谁、在什么情况下、做成什么样算成功�
 2. **改一页需求**
    - 触发：PM 要更新验收标准
    - 步骤：勾选 PM → 打开 PRD → 预览里直接改 → 保存
-   - 成功标准：`src/content/product/prd.md` 已变；非 PM 仍只读
+   - 成功标准：`src/content/product/spec/prd.md` 已变；非 PM 仍只读
 
 3. **发布前核对**
    - 触发：POM / OP 要发版

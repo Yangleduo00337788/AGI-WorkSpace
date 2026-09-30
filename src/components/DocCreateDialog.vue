@@ -8,6 +8,7 @@ import { childRelPath, fileStemFromTitle, nextOrderInFolder, toSlug } from '@/li
 const props = defineProps<{
   open: boolean
   parentSlug: string
+  asFolderDefault?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -29,7 +30,7 @@ watch(
     title.value = ''
     description.value = ''
     stem.value = ''
-    asFolder.value = false
+    asFolder.value = Boolean(props.asFolderDefault)
     error.value = ''
   },
 )
@@ -78,8 +79,8 @@ function submit() {
     <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" class="absolute inset-0 bg-background/70 backdrop-blur-sm" @click="close" />
       <div class="relative w-full max-w-md rounded-xl border bg-background p-5 shadow-xl">
-        <h2 class="text-base font-semibold">{{ t('newDoc') }}</h2>
-        <p class="mt-1 text-xs text-muted-foreground">{{ t('newDocHint') }}</p>
+        <h2 class="text-base font-semibold">{{ asFolder ? t('newFolder') : t('newDoc') }}</h2>
+        <p class="mt-1 text-xs text-muted-foreground">{{ asFolder ? t('newFolderHint') : t('newDocHint') }}</p>
         <label class="mt-4 block text-xs text-muted-foreground">{{ t('newDocTitle') }}</label>
         <Input v-model="title" class="mt-1" @keydown.enter.prevent="submit" />
         <label class="mt-3 block text-xs text-muted-foreground">{{ t('newDocDesc') }}</label>

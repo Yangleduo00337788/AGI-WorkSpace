@@ -1,5 +1,5 @@
 import type { DocEntry, NavNode } from '@/lib/content'
-import { catalog, childRelPath, getDoc, isFolderNode, isProtectedDoc, parentSlugOf, toSlug } from '@/lib/content'
+import { catalog, childRelPath, getDoc, isFolderNode, isProtectedDoc, parentSlugOf, titleFromSegment, toSlug } from '@/lib/content'
 import { isOwnedSlug, isSharedWritableSlug, type RoleId } from '@/lib/roles'
 import { syncCatalogFromDisk } from '@/lib/catalog-sync'
 import { moveDocDraft } from '@/lib/doc-drafts'
@@ -35,7 +35,6 @@ export function createParentForNode(node: NavNode, selected: RoleId[], owned: Se
   if (node.slug === '') return canCreateIn('start', selected, owned) ? 'start' : ''
   if (isFolderNode(node) && canCreateIn(node.slug, selected, owned)) return node.slug
   if (!isFolderNode(node)) {
-    if (canCreateIn(node.slug, selected, owned)) return node.slug
     const slash = node.slug.lastIndexOf('/')
     const parent = slash === -1 ? '' : node.slug.slice(0, slash)
     if (parent && canCreateIn(parent, selected, owned)) return parent
@@ -85,6 +84,30 @@ export function moveTargetFolders(doc: DocEntry, selected: RoleId[], owned: Set<
   return options
 }
 
+async function ensureParentIndexFiles(relPath: string) {
+  const parts = relPath.replaceAll('\\', '/').split('/').filter(Boolean)
+  if (!parts.length) return
+  const last = parts[parts.length - 1]!.toLowerCase()
+  const dirs = last === 'index.md' ? parts.slice(0, -1) : parts.slice(0, -1)
+  let acc = ''
+  for (const part of dirs) {
+    acc = acc ? `${acc}/${part}` : part
+    const indexRel = `${acc}/index.md`
+    if (await workspaceFileExists(indexRel)) continue
+    const stub = {
+      title: titleFromSegment(part),
+      description: '',
+      order: 50,
+      slug: acc,
+      content: '',
+      segments: acc.split('/'),
+      isIndex: true,
+      relPath: indexRel,
+    }
+    await writeWorkspaceFile(indexRel, serializeMarkdown(stub, `# ${stub.title}\n\n`))
+  }
+}
+
 export async function createWorkspaceDoc(payload: {
   title: string
   description: string
@@ -96,6 +119,7 @@ export async function createWorkspaceDoc(payload: {
   if (status.value === 'need-permission') await reconnectWorkspace()
   if (!ready.value) throw new Error('NEED_WORKSPACE')
   if (await workspaceFileExists(payload.relPath)) throw new Error('EXISTS')
+  await ensureParentIndexFiles(payload.relPath)
   const stub = {
     title: payload.title,
     description: payload.description,
@@ -149,10 +173,12 @@ export async function moveWorkspaceDoc(payload: {
   }
 
   if (doc.isIndex) {
+    await ensureParentIndexFiles(nextRel)
     await moveWorkspaceDir(doc.slug, nextSlug)
     await writeWorkspaceFile(nextRel, fileText)
   } else {
     if (await workspaceFileExists(nextRel)) throw new Error('EXISTS')
+    await ensureParentIndexFiles(nextRel)
     await writeWorkspaceFile(nextRel, fileText)
     await deleteWorkspaceFile(doc.relPath)
   }
@@ -164,4 +190,24 @@ export async function moveWorkspaceDoc(payload: {
   }
   await syncCatalogFromDisk()
   return nextSlug
+}
+
+export async function promoteDocToFolder(slug: string) {
+  const { status, ready } = useWorkspaceFs()
+  if (status.value === 'need-permission') await reconnectWorkspace()
+  if (!ready.value) throw new Error('NEED_WORKSPACE')
+  const doc = getDoc(slug)
+  if (!doc || isProtectedDoc(doc)) throw new Error('FORBIDDEN')
+  if (doc.isIndex) return slug
+  const nextRel = `${doc.slug}/index.md`
+  if (await workspaceFileExists(nextRel)) throw new Error('EXISTS')
+  const nextDoc = {
+    ...doc,
+    isIndex: true,
+    relPath: nextRel,
+  }
+  await writeWorkspaceFile(nextRel, serializeMarkdown(nextDoc, doc.content))
+  await deleteWorkspaceFile(doc.relPath)
+  await syncCatalogFromDisk()
+  return slug
 }

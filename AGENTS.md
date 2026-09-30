@@ -24,9 +24,9 @@
 1. 本文件 `AGENTS.md`
 2. `src/config/workspace-roles.json` — 当前勾选了哪些角色（配置中心勾选会立刻写入此文件）
 3. `src/content/space/references.md` — 空间如何引用项目
-4. `src/content/project/overview.md` — 范围与非目标
-5. `src/content/project/roles.md` — 七角色与可写目录
-6. 若改代码：`src/content/engineering/frontend.md`、`src/content/engineering/conventions.md`
+4. `src/content/project/charter/overview.md` — 范围与非目标
+5. `src/content/project/governance/roles.md` — 七角色与可写目录
+6. 若改代码：`src/content/engineering/frontend.md`、`src/content/engineering/process/conventions.md`
 
 用户指定了某一篇文档时，再打开对应 `src/content/...` 文件。不要在没读范围的情况下大范围重构。
 
@@ -81,13 +81,13 @@ AGI-WorkSpace/
 
 | ID | 短名 | 可写 slug（含子路径） |
 | --- | --- | --- |
-| `rd` | RD | `engineering`、architecture / conventions / contracts / domain / collab（`engineering/frontend` 归 FE） |
+| `rd` | RD | `engineering`（`engineering/frontend` 归 FE） |
 | `fe` | FE | `engineering/frontend` |
-| `pm` | PM | `product`、`product/*`、`project/overview`、`project/goals` |
+| `pm` | PM | `product`、`product/*`、`project/charter` |
 | `qa` | QA | `quality`、`quality/*` |
 | `op` | OP | `delivery/ops` |
 | `uiue` | UIUE | `design`、`design/*` |
-| `pom` | POM | `delivery`、`delivery/management`、`project/roles`、`project/status`、`records`、`records/*` |
+| `pom` | POM | `delivery`、`delivery/management`、`project/governance`、`records`、`records/*` |
 
 额外规则：
 
@@ -98,11 +98,11 @@ AGI-WorkSpace/
 - `src/content/space/**`：只要勾选了任意角色，即可在应用内编辑。
 - `src/content/start/**` 与根目录 `index.md`（项目首页）：任意已选角色可读可改。
 - 不要擅自把某篇文档的 slug 加进另一个角色，除非用户明确要求。
-- 不要新增第八个角色，除非用户明确要求并同时改 `roles.ts`、配置中心文案、`project/roles.md`。
+- 不要新增第八个角色，除非用户明确要求并同时改 `roles.ts`、配置中心文案、`project/governance/roles.md`。
 
 ## 6. 文档写法
 
-新增分类：新建文件夹 + `index.md`。  
+新增分类：新建文件夹 + `index.md`，可多层嵌套（侧栏「新建子目录」，文件名也可写成 `auth/login`）。  
 新增文档：新建 `.md`，frontmatter 必填：
 
 ```yaml
@@ -181,7 +181,7 @@ npm run build
 | 改侧栏空间配置 | `AppSidebar` + `space-nav.ts` + 对应 view/md |
 | 改推送成功文案 | `src/config/push-success.json` 或配置中心「推送成功文案」 |
 | 改名称 / Logo / 口号 | `src/config/branding.json`、`public/logo-*.png` 或配置中心「工作空间标识」 |
-| 改角色可写范围 | 同时改 `src/lib/roles.ts` 与 `src/content/project/roles.md` |
+| 改角色可写范围 | 同时改 `src/lib/roles.ts` 与 `src/content/project/governance/roles.md` |
 | 看当前勾选了谁 | 读 `src/config/workspace-roles.json`，不要读浏览器缓存 |
 | 修 Git 推送 | `git-sync.ts` / `handle-fs.ts` / `vite.config.ts` 代理，不要改回 Contents API 逐文件提交 |
 
@@ -189,8 +189,8 @@ npm run build
 
 把本模板套到新项目时，Agent 应逐项完成并保持勾选状态可追踪：
 
-- [ ] `project/overview.md`、`project/goals.md`、`project/status.md` 已换成当前项目
-- [ ] `project/roles.md` 对接人已填
+- [ ] `project/charter/overview.md`、`project/charter/goals.md`、`project/governance/status.md` 已换成当前项目
+- [ ] `project/governance/roles.md` 对接人已填
 - [ ] 产品设计 / 体验设计 / 研发设计 / 质量保障 / 交付运维 / 过程记录中的占位已替换或标明仍待填
 - [ ] 配置中心：工作目录已授权，工作空间名称与 Logo 已换成当前项目，代码空间已绑定当前仓库
 - [ ] 本文件「1. 身份与目标」表格已更新

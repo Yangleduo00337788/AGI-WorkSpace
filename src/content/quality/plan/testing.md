@@ -4,7 +4,7 @@ description: 测试计划、范围、环境、门禁
 order: 1
 ---
 
-QA 维护。这是测试计划页。用例在 [测试用例](/quality/cases)，跑出来的记录在 [执行证据](/quality/evidence)，缺陷在 [缺陷记录](/quality/defects)。
+QA 维护。这是测试计划页。用例在 [测试用例](/quality/run/cases)，跑出来的记录在 [执行证据](/quality/run/evidence)，缺陷在 [缺陷记录](/quality/run/defects)。
 
 ## 质量目标
 

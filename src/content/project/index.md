@@ -4,15 +4,13 @@ description: 概述、目标、角色与状态
 order: 10
 ---
 
-本组描述项目「是什么、要去哪、谁负责、现在到哪了」。**PM** 维护概述和目标；**POM** 维护角色表和状态。立项后优先填完这四篇，再写产品 PRD。
+本组描述项目「是什么、要去哪、谁负责、现在到哪了」。下面再拆两层，避免四篇平铺在同一层。
 
-## 本组文档
+## 本组目录
 
-| 文档 | 写什么 | 维护 |
+| 目录 | 写什么 | 维护 |
 | --- | --- | --- |
-| [项目概述](/project/overview) | 背景、范围、非目标、核心价值 | PM |
-| [项目目标](/project/goals) | 可验证的产品 / 用户 / 技术 / 交付目标 | PM |
-| [项目角色](/project/roles) | 七角色、对接人、可写目录 | POM |
-| [项目状态](/project/status) | 当前阶段、风险、下一步 | POM |
+| [立项章程](/project/charter) | [概述](/project/charter/overview)、[目标](/project/charter/goals) | PM |
+| [治理看板](/project/governance) | [角色](/project/governance/roles)、[状态](/project/governance/status) | POM |
 
 入口介绍仍以 [项目介绍文档](/start/project-intro) 为准；本组是给执行用的细表。

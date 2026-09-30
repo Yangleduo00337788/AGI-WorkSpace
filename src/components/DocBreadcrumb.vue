@@ -2,13 +2,18 @@
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { ChevronRight } from 'lucide-vue-next'
-import { breadcrumbs, catalog, slugFromPath } from '@/lib/content'
+import { breadcrumbs, catalog, findNavNode, isExpandableNavFolder, slugFromPath } from '@/lib/content'
 
 const route = useRoute()
 const crumbs = computed(() => {
   void catalog.revision
   return breadcrumbs(slugFromPath(route.path))
 })
+function isDocCrumb(crumb: { slug?: string }) {
+  if (crumb.slug === undefined) return false
+  if (!crumb.slug) return true
+  return !isExpandableNavFolder(findNavNode(crumb.slug))
+}
 </script>
 
 <template>
@@ -19,7 +24,7 @@ const crumbs = computed(() => {
     <template v-for="(crumb, index) in crumbs" :key="`${crumb.title}-${index}`">
       <ChevronRight v-if="index" class="size-3.5 shrink-0 opacity-50" />
       <RouterLink
-        v-if="crumb.slug !== undefined && index !== crumbs.length - 1"
+        v-if="isDocCrumb(crumb) && index !== crumbs.length - 1"
         :to="crumb.slug ? `/${crumb.slug}` : '/'"
         class="truncate transition-colors hover:text-foreground"
       >

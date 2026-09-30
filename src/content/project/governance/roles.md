@@ -22,21 +22,21 @@ order: 3
 
 | 角色 | 负责目录 / 文档 |
 | --- | --- |
-| RD | [研发设计](/engineering)、[技术架构](/engineering/architecture)、[工程规范](/engineering/conventions)、[接口契约](/engineering/contracts)、[领域设计](/engineering/domain)、[研发协作](/engineering/collab) |
+| RD | [研发设计](/engineering)、[技术架构](/engineering/tech/architecture)、[工程规范](/engineering/process/conventions)、[接口契约](/engineering/process/contracts)、[领域设计](/engineering/tech/domain)、[研发协作](/engineering/process/collab) |
 | FE | [前端结构](/engineering/frontend) |
-| PM | [产品设计](/product)、[产品定义](/product/definition)、[用户与需求](/product/users)、[产品需求](/product/prd)、[原型与排期](/product/prototypes)、[项目概述](/project/overview)、[项目目标](/project/goals) |
-| QA | [质量保障](/quality)、[测试与质量](/quality/testing)、[测试用例](/quality/cases)、[执行证据](/quality/evidence)、[缺陷记录](/quality/defects) |
+| PM | [产品设计](/product)、[产品定义](/product/definition)、[用户与需求](/product/discovery/users)、[产品需求](/product/spec/prd)、[原型与排期](/product/spec/prototypes)、[项目概述](/project/charter/overview)、[项目目标](/project/charter/goals) |
+| QA | [质量保障](/quality)、[测试与质量](/quality/plan/testing)、[测试用例](/quality/run/cases)、[执行证据](/quality/run/evidence)、[缺陷记录](/quality/run/defects) |
 | OP | [运维与交付](/delivery/ops) |
-| UIUE | [体验设计](/design)、[设计与体验](/design/experience)、[视觉规范](/design/specs)、[设计交付](/design/handoff) |
-| POM | [项目总览](/project)、[项目角色](/project/roles)、[项目状态](/project/status)、[交付运维](/delivery)、[项目管理](/delivery/management)、[过程记录](/records)、[项目决策](/records/decisions) |
+| UIUE | [体验设计](/design)、[设计与体验](/design/system/experience)、[视觉规范](/design/system/specs)、[设计交付](/design/handoff) |
+| POM | [项目总览](/project)、[项目角色](/project/governance/roles)、[项目状态](/project/governance/status)、[交付运维](/delivery)、[项目管理](/delivery/management)、[过程记录](/records)、[项目决策](/records/decisions) |
 
 **共用：** [开始阅读](/start)（含 [项目首页](/)）任意已勾选角色可读可改，不绑在某一个角色上。
 
 ## 协作约定
 
-- **需求入口：** PM 写入 [用户与需求](/product/users) 和 [产品需求](/product/prd)，评审通过后再进研发。
+- **需求入口：** PM 写入 [用户与需求](/product/discovery/users) 和 [产品需求](/product/spec/prd)，评审通过后再进研发。
 - **设计入口：** UIUE 在 [设计交付](/design/handoff) 勾选完成，FE 才按稿实现。
-- **契约入口：** RD 改写回或 Git 推送约定必须先改 [接口契约](/engineering/contracts)，再通知 FE / QA。
+- **契约入口：** RD 改写回或 Git 推送约定必须先改 [接口契约](/engineering/process/contracts)，再通知 FE / QA。
 - **发布入口：** QA 门禁通过后，OP 按 [运维与交付](/delivery/ops) 发布；回滚同样走该页。
 - **决策入口：** 聊天里达成的结论，POM 当天写入 [项目决策](/records/decisions)。
 - **紧急升级：** 阻塞超过一个工作日 → 对接人 → POM → 项目负责人。

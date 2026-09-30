@@ -10,9 +10,9 @@ RD 维护。把研发过程里「和谁对齐、什么时候通知」留下记�
 
 | 事项 | 对齐谁 | 文档 |
 | --- | --- | --- |
-| 需求是否可实现 | PM | [产品需求](/product/prd) |
-| 写回 / 推送约定 | FE / QA | [接口契约](/engineering/contracts) |
-| 领域规则 | PM / QA | [领域设计](/engineering/domain) |
+| 需求是否可实现 | PM | [产品需求](/product/spec/prd) |
+| 写回 / 推送约定 | FE / QA | [接口契约](/engineering/process/contracts) |
+| 领域规则 | PM / QA | [领域设计](/engineering/tech/domain) |
 | 发布窗口 | OP / POM | [运维与交付](/delivery/ops) |
 
 ## 联调记录
@@ -35,7 +35,7 @@ RD 维护。把研发过程里「和谁对齐、什么时候通知」留下记�
 
 ## 评审清单
 
-- [ ] 方案能在 [技术架构](/engineering/architecture) 里找到位置
+- [ ] 方案能在 [技术架构](/engineering/tech/architecture) 里找到位置
 - [ ] 写回或推送约定变了已写入契约
 - [ ] QA 知道要补哪些用例
 - [ ] 不需要的能力已写进非目标，而不是悄悄做掉

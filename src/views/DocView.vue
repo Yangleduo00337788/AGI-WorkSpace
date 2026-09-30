@@ -1,15 +1,25 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, ArrowRight } from 'lucide-vue-next'
+import { ArrowLeft, ArrowRight, Pause, Square, Volume2 } from 'lucide-vue-next'
 import DocToc from '@/components/DocToc.vue'
 import DocStats from '@/components/DocStats.vue'
 import DocChildren from '@/components/DocChildren.vue'
 import DocHomeNav from '@/components/DocHomeNav.vue'
 import DocHomeHero from '@/components/DocHomeHero.vue'
 import { useI18n } from '@/composables/useI18n'
-import { catalog, docDir, formatDocUpdatedAt, getDoc, getNeighbors, isProtectedDoc, slugFromPath } from '@/lib/content'
-import { canCreateIn, canEditSlug, canMoveDoc, createWorkspaceDoc, moveWorkspaceDoc } from '@/lib/doc-manage'
+import {
+  catalog,
+  docDir,
+  findNavNode,
+  formatDocUpdatedAt,
+  getDoc,
+  getNeighbors,
+  isExpandableNavFolder,
+  isProtectedDoc,
+  slugFromPath,
+} from '@/lib/content'
+import { canCreateIn, canEditSlug, canMoveDoc, createWorkspaceDoc, moveWorkspaceDoc, promoteDocToFolder } from '@/lib/doc-manage'
 import { pendingEditSlug, pendingMoveSlug } from '@/lib/doc-session'
 import { hydrateContentImages } from '@/lib/content-images'
 import { saveDocOverride, removeDocOverride, docOverrides } from '@/lib/doc-store'
@@ -33,7 +43,8 @@ import DocMoveDialog from '@/components/DocMoveDialog.vue'
 import { Button } from '@/components/ui/button'
 import { useRoles } from '@/composables/useRoles'
 import { workspaceName } from '@/lib/branding'
-import { renderMarkdown, type TocItem } from '@/lib/markdown'
+import { useDocSpeech } from '@/composables/useDocSpeech'
+import { renderMarkdown, stripMarkdown, type TocItem } from '@/lib/markdown'
 import { messages } from '@/i18n/messages'
 
 const route = useRoute()
@@ -42,6 +53,8 @@ const { t, locale } = useI18n()
 const { selected, ownedSlugs } = useRoles()
 const { ready: fsReady, status: fsStatus } = useWorkspaceFs()
 const { ready: remoteReady, autoPush } = useRemoteGit()
+const { status: speechStatus, speak, pause: pauseSpeech, resume: resumeSpeech, stop: stopSpeech, supported: speechOk } =
+  useDocSpeech()
 
 const slug = computed(() => slugFromPath(route.path))
 
@@ -65,7 +78,7 @@ const createParent = computed(() => {
   if (current.segments[0] === 'space' || current.segments[0] === 'start') {
     return current.isIndex ? current.slug : docDir(current) || current.slug
   }
-  return current.isIndex ? current.slug : current.slug
+  return current.isIndex ? current.slug : docDir(current)
 })
 const canCreate = computed(() => canCreateIn(createParent.value, selected.value, ownedSlugs.value))
 const canDelete = computed(() => canEdit.value && doc.value && !isProtectedDoc(doc.value))
@@ -89,7 +102,14 @@ const draftRestored = ref(false)
 const saving = ref(false)
 const saveMessage = ref('')
 const visualEditor = ref<{ getMarkdown: () => string } | null>(null)
+const canPromote = computed(() => Boolean(canEdit.value && doc.value && !doc.value.isIndex && !isProtectedDoc(doc.value)))
+const isFolderLanding = computed(() => {
+  void catalog.revision
+  if (!doc.value?.isIndex || !slug.value) return false
+  return isExpandableNavFolder(findNavNode(slug.value))
+})
 const creating = ref(false)
+const creatingAsFolder = ref(false)
 const moving = ref(false)
 const articleRoot = ref<HTMLElement | null>(null)
 let draftTimer = 0
@@ -205,6 +225,7 @@ async function createDoc(payload: {
   try {
     await createWorkspaceDoc(payload)
     creating.value = false
+    creatingAsFolder.value = false
     await router.push(payload.slug ? `/${payload.slug}` : '/')
     saveMessage.value = t.value('docCreated')
   } catch (error) {
@@ -384,7 +405,69 @@ function tryStartPendingEdit() {
   pendingEditSlug.value = null
 }
 
+function speakableFromArticle() {
+  const root = articleRoot.value
+  if (!root) return ''
+  const clone = root.cloneNode(true) as HTMLElement
+  clone.querySelectorAll('.copy-code, .mermaid-wrap, pre, code').forEach((el) => el.remove())
+  return clone.innerText.replace(/\s+/g, ' ').trim()
+}
+
+function speakCurrent() {
+  const current = doc.value
+  if (!current || editing.value) return
+  const fromDom = speakableFromArticle()
+  const fallback = [current.title, current.description, stripMarkdown(current.content)].filter(Boolean).join('。')
+  const text = fromDom || fallback
+  saveMessage.value = ''
+  if (!speak(text, locale.value)) saveMessage.value = t.value('speakEmpty')
+}
+
+function openNewDoc() {
+  creatingAsFolder.value = false
+  creating.value = true
+}
+
+async function openNewFolder() {
+  const current = doc.value
+  if (!current) return
+  saveMessage.value = ''
+  try {
+    if (!current.isIndex && current.slug) {
+      await promoteDocToFolder(current.slug)
+      saveMessage.value = t.value('promoteFolderOk')
+    }
+    creatingAsFolder.value = true
+    creating.value = true
+  } catch (error) {
+    const code = error instanceof Error ? error.message : ''
+    if (code === 'NEED_WORKSPACE') saveMessage.value = t.value('needWorkspace')
+    else if (code === 'EXISTS') saveMessage.value = t.value('docExists')
+    else saveMessage.value = t.value('settingsFail')
+  }
+}
+
+async function promoteCurrent() {
+  const current = doc.value
+  if (!current || !canPromote.value) return
+  saveMessage.value = ''
+  try {
+    await promoteDocToFolder(current.slug)
+    saveMessage.value = t.value('promoteFolderOk')
+  } catch (error) {
+    const code = error instanceof Error ? error.message : ''
+    if (code === 'NEED_WORKSPACE') saveMessage.value = t.value('needWorkspace')
+    else if (code === 'EXISTS') saveMessage.value = t.value('docExists')
+    else saveMessage.value = t.value('settingsFail')
+  }
+}
+
+watch(editing, (value) => {
+  if (value) stopSpeech()
+})
+
 watch(slug, () => {
+  stopSpeech()
   editing.value = false
   draftRestored.value = false
   setUnsavedLeave(false)
@@ -473,6 +556,7 @@ onUnmounted(() => {
   stopBeforeUnload?.()
   setUnsavedFlush(null)
   setUnsavedLeave(false)
+  stopSpeech()
 })
 </script>
 
@@ -489,7 +573,7 @@ onUnmounted(() => {
             <DocHomeHero />
           </template>
           <template v-else>
-            <p v-if="doc.description" class="mb-2 text-sm text-muted-foreground">{{ doc.description }}</p>
+            <p v-if="doc.description && !isFolderLanding" class="mb-2 text-sm text-muted-foreground">{{ doc.description }}</p>
             <div class="flex items-baseline justify-between gap-4">
               <h1 class="min-w-0 text-3xl font-semibold tracking-tight text-balance">{{ doc.title }}</h1>
               <time v-if="updatedLabel" class="shrink-0 text-xs text-muted-foreground whitespace-nowrap">{{ updatedLabel }}</time>
@@ -502,11 +586,58 @@ onUnmounted(() => {
             <RouterLink to="/settings#roles" class="hover:underline">{{ t('pickRoleFirst') }}</RouterLink>
           </p>
           <div class="mt-3 flex flex-wrap items-center gap-2">
+            <Button
+              v-if="speechOk && !editing && !isFolderLanding && speechStatus === 'idle'"
+              size="sm"
+              variant="outline"
+              :aria-label="t('speakDoc')"
+              @click="speakCurrent"
+            >
+              <Volume2 class="size-3.5" />
+              {{ t('speakDoc') }}
+            </Button>
+            <Button
+              v-if="speechOk && !editing && !isFolderLanding && speechStatus === 'speaking'"
+              size="sm"
+              variant="outline"
+              :aria-label="t('pauseSpeech')"
+              @click="pauseSpeech"
+            >
+              <Pause class="size-3.5" />
+              {{ t('pauseSpeech') }}
+            </Button>
+            <Button
+              v-if="speechOk && !editing && !isFolderLanding && speechStatus === 'paused'"
+              size="sm"
+              variant="outline"
+              :aria-label="t('resumeSpeech')"
+              @click="resumeSpeech"
+            >
+              <Volume2 class="size-3.5" />
+              {{ t('resumeSpeech') }}
+            </Button>
+            <Button
+              v-if="speechOk && !editing && !isFolderLanding && (speechStatus === 'speaking' || speechStatus === 'paused')"
+              size="sm"
+              variant="ghost"
+              :aria-label="t('stopSpeech')"
+              @click="stopSpeech"
+            >
+              <Square class="size-3.5" />
+              {{ t('stopSpeech') }}
+            </Button>
+            <p v-if="!speechOk && !editing && !isFolderLanding" class="w-full text-xs text-muted-foreground">{{ t('speechUnsupported') }}</p>
             <Button v-if="canEdit && !editing" size="sm" variant="outline" @click="startEdit">
               {{ t('editDoc') }}
             </Button>
-            <Button v-if="canCreate && !editing" size="sm" variant="outline" @click="creating = true">
+            <Button v-if="canCreate && !editing" size="sm" variant="outline" @click="openNewDoc">
               {{ t('newDoc') }}
+            </Button>
+            <Button v-if="canCreate && !editing" size="sm" variant="outline" @click="openNewFolder">
+              {{ t('newFolder') }}
+            </Button>
+            <Button v-if="canPromote && !editing" size="sm" variant="outline" @click="promoteCurrent">
+              {{ t('promoteFolder') }}
             </Button>
             <Button v-if="canMove && !editing" size="sm" variant="outline" @click="moving = true">
               {{ t('moveDoc') }}
@@ -539,22 +670,22 @@ onUnmounted(() => {
             @save="saveEdit"
           />
           <div
-            v-else-if="!loading"
+            v-else-if="!loading && !isFolderLanding"
             ref="articleRoot"
             class="prose prose-docs mt-8 max-w-none prose-headings:scroll-mt-24"
             @click="onContentClick"
             v-html="html"
           />
-          <div v-else class="mt-10 space-y-3">
+          <div v-else-if="loading" class="mt-10 space-y-3">
             <div class="h-4 w-5/6 animate-pulse rounded bg-muted" />
             <div class="h-4 w-full animate-pulse rounded bg-muted" />
             <div class="h-4 w-2/3 animate-pulse rounded bg-muted" />
           </div>
 
           <DocHomeNav v-if="!slug && !editing" />
-          <DocChildren v-if="slug && doc.isIndex && !editing" :slug="slug" />
+          <DocChildren v-if="isFolderLanding && !editing" :slug="slug" />
 
-          <div class="mt-16 grid gap-4 border-t pt-8 sm:grid-cols-2">
+          <div v-if="!isFolderLanding" class="mt-16 grid gap-4 border-t pt-8 sm:grid-cols-2">
             <RouterLink
               v-if="neighbors.prev"
               :to="neighbors.prev.slug ? `/${neighbors.prev.slug}` : '/'"
@@ -589,13 +720,19 @@ onUnmounted(() => {
     <aside class="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-56 shrink-0 overflow-y-auto py-8 pr-6 lg:block scrollbar-thin">
       <DocStats />
       <DocToc
+        v-if="!isFolderLanding"
         :items="toc"
         :active-id="activeId"
         :title="t('onThisPage')"
         @select="scrollToHeading"
       />
     </aside>
-    <DocCreateDialog v-model:open="creating" :parent-slug="createParent" @create="createDoc" />
+    <DocCreateDialog
+      v-model:open="creating"
+      :parent-slug="createParent"
+      :as-folder-default="creatingAsFolder"
+      @create="createDoc"
+    />
     <DocMoveDialog v-model:open="moving" :slug="slug" @move="applyMove" />
   </div>
 </template>

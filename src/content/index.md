@@ -36,19 +36,19 @@ order: 0
 
 | 角色 | 关键文档 | 填完了吗 |
 | --- | --- | --- |
-| RD 研发设计 | [架构](/engineering/architecture) · [契约](/engineering/contracts) · [领域](/engineering/domain) · [规范](/engineering/conventions) · [协作](/engineering/collab) | 模版已齐，换项目后改内容 |
+| RD 研发设计 | [架构](/engineering/tech/architecture) · [契约](/engineering/process/contracts) · [领域](/engineering/tech/domain) · [规范](/engineering/process/conventions) · [协作](/engineering/process/collab) | 模版已齐，换项目后改内容 |
 | FE 前端研发 | [前端结构](/engineering/frontend) | 模版已齐 |
-| PM 产品设计 | [定义](/product/definition) · [用户](/product/users) · [PRD](/product/prd) · [原型与排期](/product/prototypes) · [概述](/project/overview) · [目标](/project/goals) | 模版已齐 |
-| QA 测试 | [计划](/quality/testing) · [用例](/quality/cases) · [证据](/quality/evidence) · [缺陷](/quality/defects) | 模版已齐 |
+| PM 产品设计 | [定义](/product/definition) · [用户](/product/discovery/users) · [PRD](/product/spec/prd) · [原型与排期](/product/spec/prototypes) · [概述](/project/charter/overview) · [目标](/project/charter/goals) | 模版已齐 |
+| QA 测试 | [计划](/quality/plan/testing) · [用例](/quality/run/cases) · [证据](/quality/run/evidence) · [缺陷](/quality/run/defects) | 模版已齐 |
 | OP 运维 | [运维与交付](/delivery/ops) | 模版已齐 |
-| UIUE 视觉与体验 | [体验](/design/experience) · [规范](/design/specs) · [交付](/design/handoff) | 模版已齐 |
-| POM 项目与交付 | [角色](/project/roles) · [状态](/project/status) · [计划](/delivery/management) · [决策](/records/decisions) | 模版已齐 |
+| UIUE 视觉与体验 | [体验](/design/system/experience) · [规范](/design/system/specs) · [交付](/design/handoff) | 模版已齐 |
+| POM 项目与交付 | [角色](/project/governance/roles) · [状态](/project/governance/status) · [计划](/delivery/management) · [决策](/records/decisions) | 模版已齐 |
 
-对照表见 [项目角色](/project/roles)。**开始阅读**（含本页）只要勾了任意角色就可以读、改。
+对照表见 [项目角色](/project/governance/roles)。**开始阅读**（含本页）只要勾了任意角色就可以读、改。
 
 ## 使用约定
 
-- 文档都在 `src/content/`，一篇文档一个主题；新分类 = 新文件夹 + `index.md`
+- 文档都在 `src/content/`，一篇文档一个主题；新分类 = 新文件夹 + `index.md`，允许多层嵌套，不要在同一层堆几十个 `.md`
 - Frontmatter 的 `title`、`order`、`description` 控制侧栏
 - 决策、取舍、事故写入 [项目决策](/records/decisions)，不要只留在聊天里
 - Agent 动手前先读根目录 [AGENTS.md](/space/harness/AGENTS)

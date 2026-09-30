@@ -3,6 +3,7 @@ import DocsLayout from '@/layouts/DocsLayout.vue'
 import DocView from '@/views/DocView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import { confirmLeaveIfUnsaved } from '@/lib/editor-session'
+import { redirectedSlug } from '@/lib/slug-redirects'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -29,6 +30,9 @@ const router = createRouter({
 router.beforeEach((to, from) => {
   if (to.path === from.path) return true
   if (!confirmLeaveIfUnsaved()) return false
+  const raw = to.path.replace(/^\/+/, '')
+  const next = redirectedSlug(raw)
+  if (next) return { path: `/${next}`, hash: to.hash, query: to.query }
   return true
 })
 

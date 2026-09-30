@@ -110,7 +110,7 @@ function isIndexRel(relPath: string): boolean {
   return normalized === 'index.md' || normalized.endsWith('/index.md')
 }
 
-function titleFromSegment(segment: string): string {
+export function titleFromSegment(segment: string): string {
   return segment
     .split(/[-_]/)
     .filter(Boolean)
@@ -137,7 +137,7 @@ function flattenNav(nodes: NavNode[]): DocEntry[] {
     for (const item of items) {
       if (item.slug !== undefined) {
         const found = docsBySlug.get(item.slug)
-        if (found) list.push(found)
+        if (found && isBrowsableDoc(found)) list.push(found)
       }
       if (item.children) visit(item.children)
     }
@@ -166,9 +166,47 @@ export function docFromFile(relPath: string, raw: string, updatedAt?: number): D
   }
 }
 
+function hasDescendantDocs(slug: string, docs: DocEntry[]): boolean {
+  if (!slug) return docs.some((item) => item.slug !== '')
+  const prefix = `${slug}/`
+  return docs.some((item) => item.slug.startsWith(prefix))
+}
+
+/** 分组目录的 index.md 不是一篇可打开文档；叶子（含空目录收成的文档）才进阅读顺序 / 搜索。 */
+export function isBrowsableDoc(doc: DocEntry): boolean {
+  if (!doc.isIndex || doc.slug === '') return true
+  return !hasDescendantDocs(doc.slug, catalog.docs)
+}
+
+function collapseEmptyNavFolders(nodes: NavNode[]): NavNode[] {
+  return nodes.map((node) => {
+    const children = node.children?.length ? collapseEmptyNavFolders(node.children) : undefined
+    if (node.kind === 'folder' && (!children || !children.length) && node.slug !== undefined) {
+      return { ...node, kind: 'doc' as const, children: undefined }
+    }
+    return children ? { ...node, children } : { ...node, children: undefined }
+  })
+}
+
+function preferLeafOverIndex(docs: DocEntry[]): DocEntry[] {
+  const bySlug = new Map<string, DocEntry>()
+  for (const doc of docs) {
+    const prev = bySlug.get(doc.slug)
+    if (!prev) {
+      bySlug.set(doc.slug, doc)
+      continue
+    }
+    if (prev.isIndex && !doc.isIndex) bySlug.set(doc.slug, doc)
+    else if (!prev.isIndex && doc.isIndex) continue
+    else bySlug.set(doc.slug, doc)
+  }
+  return [...bySlug.values()]
+}
+
 function buildNav(docs: DocEntry[]): NavNode[] {
   const root: NavNode[] = []
   const folders = new Map<string, NavNode>()
+  const indexSlugs = new Set(docs.filter((item) => item.isIndex && item.slug).map((item) => item.slug))
 
   const ensureFolder = (segments: string[]): NavNode => {
     let parentChildren = root
@@ -215,6 +253,8 @@ function buildNav(docs: DocEntry[]): NavNode[] {
       continue
     }
 
+    if (indexSlugs.has(doc.slug)) continue
+
     const folderSegs = doc.segments.slice(0, -1)
     const leaf: NavNode = {
       id: doc.slug,
@@ -233,7 +273,7 @@ function buildNav(docs: DocEntry[]): NavNode[] {
     }
   }
 
-  return sortTree(root)
+  return collapseEmptyNavFolders(sortTree(root))
 }
 
 export function bundledContentFiles(): ContentFile[] {
@@ -244,10 +284,11 @@ export function bundledContentFiles(): ContentFile[] {
 }
 
 export function replaceCatalog(files: ContentFile[]) {
-  const docs = files
-    .filter((file) => file.relPath.replaceAll('\\', '/').toLowerCase().endsWith('.md'))
-    .map((file) => docFromFile(file.relPath, file.raw, file.updatedAt))
-    .sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug))
+  const docs = preferLeafOverIndex(
+    files
+      .filter((file) => file.relPath.replaceAll('\\', '/').toLowerCase().endsWith('.md'))
+      .map((file) => docFromFile(file.relPath, file.raw, file.updatedAt)),
+  ).sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug))
 
   docsBySlug.clear()
   for (const doc of docs) docsBySlug.set(doc.slug, doc)
@@ -312,10 +353,11 @@ export function fileStemFromTitle(title: string): string {
 }
 
 export function childRelPath(parentSlug: string, stem: string, asFolder: boolean): string {
-  const safe = stem.replace(/\.md$/i, '').replaceAll('\\', '/').split('/').filter(Boolean).pop() ?? ''
-  if (!safe || safe === '.' || safe === '..') throw new Error('BAD_PATH')
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(safe)) throw new Error('BAD_NAME')
-  const file = asFolder ? `${safe}/index.md` : `${safe}.md`
+  const parts = stem.replace(/\.md$/i, '').replaceAll('\\', '/').split('/').filter(Boolean)
+  if (!parts.length || parts.some((part) => part === '.' || part === '..')) throw new Error('BAD_PATH')
+  if (!parts.every((part) => /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(part))) throw new Error('BAD_NAME')
+  const nested = parts.join('/')
+  const file = asFolder ? `${nested}/index.md` : `${nested}.md`
   return parentSlug ? `${parentSlug}/${file}` : file
 }
 
@@ -348,6 +390,11 @@ export function isFolderNode(node: NavNode): boolean {
   return node.kind === 'folder' || Boolean(node.children?.length)
 }
 
+/** 侧栏目录只展开，不作为 Markdown 页面。展开后带文档图标的才是正文。 */
+export function isExpandableNavFolder(node: NavNode | undefined): boolean {
+  return Boolean(node && node.kind === 'folder' && node.children?.length)
+}
+
 export function findNavNode(id: string, nodes: NavNode[] = catalog.navTree): NavNode | undefined {
   for (const node of nodes) {
     if (node.id === id || node.slug === id) return node
@@ -364,7 +411,7 @@ export function pageChildren(slug: string): { folders: NavNode[]; docs: NavNode[
   const docs: NavNode[] = []
   for (const node of kids) {
     if (node.slug === slug) continue
-    if (isFolderNode(node)) folders.push(node)
+    if (isExpandableNavFolder(node)) folders.push(node)
     else docs.push(node)
   }
   return { folders, docs }
@@ -394,8 +441,8 @@ export function countWorkspaceDocs(): { files: number; folders: number } {
   let folders = 0
   for (const doc of catalog.docs) {
     if (isSpaceRel(doc.relPath)) continue
-    files += 1
-    if (doc.isIndex && doc.slug) folders += 1
+    if (doc.isIndex && doc.slug && hasDescendantDocs(doc.slug, catalog.docs)) folders += 1
+    else files += 1
   }
   return { files, folders }
 }

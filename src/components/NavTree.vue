@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { ChevronRight, FileText, Folder, FolderInput, FolderOpen, Pencil, Plus } from 'lucide-vue-next'
+import { ChevronRight, FileText, Folder, FolderInput, FolderOpen, FolderPlus, Pencil, Plus } from 'lucide-vue-next'
 import type { NavNode } from '@/lib/content'
-import { getDoc, isFolderNode, slugFromPath } from '@/lib/content'
+import { getDoc, isExpandableNavFolder, slugFromPath } from '@/lib/content'
 import { canEditSlug, canMoveDoc, createParentForNode } from '@/lib/doc-manage'
 import { useRoles } from '@/composables/useRoles'
 import { useI18n } from '@/composables/useI18n'
@@ -19,7 +19,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   navigate: []
-  create: [parentSlug: string]
+  create: [payload: { parentSlug: string; asFolder: boolean }]
   edit: [slug: string]
   move: [slug: string]
 }>()
@@ -68,12 +68,12 @@ function canMoveNode(node: NavNode) {
   return canMoveDoc(current, selected.value, ownedSlugs.value)
 }
 
-function onCreate(event: Event, node: NavNode) {
+function onCreate(event: Event, node: NavNode, asFolder = false) {
   event.preventDefault()
   event.stopPropagation()
-  const parent = createParent(node)
+  const parent = asFolder && node.slug ? node.slug : createParent(node)
   if (!parent) return
-  emit('create', parent)
+  emit('create', { parentSlug: parent, asFolder })
 }
 
 function onEdit(event: Event, node: NavNode) {
@@ -97,28 +97,6 @@ function toggle(id: string) {
   openIds.value = next
 }
 
-function openFolder(id: string) {
-  if (openIds.value.has(id)) return
-  const next = new Set(openIds.value)
-  next.add(id)
-  openIds.value = next
-}
-
-function onFolderTitleClick(event: MouseEvent, node: NavNode) {
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-    openFolder(node.id)
-    emit('navigate')
-    return
-  }
-  if (openIds.value.has(node.id) && isActive(node.slug)) {
-    event.preventDefault()
-    toggle(node.id)
-    return
-  }
-  openFolder(node.id)
-  emit('navigate')
-}
-
 watch(
   () => [route.fullPath, props.initiallyOpen, props.nodes] as const,
   () => {
@@ -126,7 +104,7 @@ watch(
     for (const id of props.initiallyOpen ?? []) next.add(id)
     const walk = (nodes: NavNode[]) => {
       for (const node of nodes) {
-        if (isFolderNode(node) && isAncestor(node)) next.add(node.id)
+        if (isExpandableNavFolder(node) && isAncestor(node)) next.add(node.id)
         if (node.children) walk(node.children)
       }
     }
@@ -140,14 +118,10 @@ watch(
 <template>
   <ul class="flex flex-col gap-0.5" :style="{ paddingLeft: depth ? '0.7rem' : '0' }">
     <li v-for="node in nodes" :key="node.id">
-      <div v-if="isFolderNode(node)" class="flex flex-col">
+      <div v-if="isExpandableNavFolder(node)" class="flex flex-col">
         <div
-          class="group/nav flex items-center rounded-md transition-colors"
-          :class="
-            isActive(node.slug)
-              ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
-              : 'hover:bg-sidebar-accent/70'
-          "
+          class="group/nav flex items-center rounded-md transition-colors hover:bg-sidebar-accent/70"
+          :class="isAncestor(node) ? 'font-medium' : ''"
         >
           <button
             type="button"
@@ -161,28 +135,17 @@ watch(
               :class="openIds.has(node.id) ? 'rotate-90' : ''"
             />
           </button>
-          <RouterLink
-            v-if="node.slug !== undefined"
-            :to="node.slug ? `/${node.slug}` : '/'"
+          <button
+            type="button"
             :class="
               cn(
-                'flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-[13px] leading-5',
+                'flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-left text-[13px] leading-5',
                 !isOwned(node) && 'opacity-45',
-                isActive(node.slug)
+                isAncestor(node)
                   ? 'text-sidebar-accent-foreground'
                   : 'text-sidebar-foreground/80 hover:text-sidebar-accent-foreground',
               )
             "
-            @click="onFolderTitleClick($event, node)"
-          >
-            <FolderOpen v-if="openIds.has(node.id)" class="size-3.5 shrink-0 text-muted-foreground" />
-            <Folder v-else class="size-3.5 shrink-0 text-muted-foreground" />
-            <span class="truncate">{{ node.title }}</span>
-          </RouterLink>
-          <button
-            v-else
-            type="button"
-            class="flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-left text-[13px] font-medium leading-5 text-sidebar-foreground/90"
             @click="toggle(node.id)"
           >
             <FolderOpen v-if="openIds.has(node.id)" class="size-3.5 shrink-0 text-muted-foreground" />
@@ -192,7 +155,7 @@ watch(
           <div
             v-if="showActions && (canEditNode(node) || createParent(node) || canMoveNode(node))"
             class="flex shrink-0 pr-0.5 opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100"
-            :class="isActive(node.slug) ? 'opacity-100' : ''"
+            :class="isAncestor(node) ? 'opacity-100' : ''"
           >
             <button
               v-if="canEditNode(node)"
@@ -220,9 +183,19 @@ watch(
               class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
               :title="t('newDoc')"
               :aria-label="t('newDoc')"
-              @click="onCreate($event, node)"
+              @click="onCreate($event, node, false)"
             >
               <Plus class="size-3.5" />
+            </button>
+            <button
+              v-if="createParent(node)"
+              type="button"
+              class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
+              :title="t('newFolder')"
+              :aria-label="t('newFolder')"
+              @click="onCreate($event, node, true)"
+            >
+              <FolderPlus class="size-3.5" />
             </button>
           </div>
         </div>
@@ -303,7 +276,7 @@ watch(
             class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
             :title="t('newDoc')"
             :aria-label="t('newDoc')"
-            @click="onCreate($event, node)"
+            @click="onCreate($event, node, false)"
           >
             <Plus class="size-3.5" />
           </button>

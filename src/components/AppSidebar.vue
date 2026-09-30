@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { ChevronRight, FileText, Folder, FolderInput, FolderOpen, Pencil, Plus } from 'lucide-vue-next'
+import { ChevronRight, FileText, Folder, FolderInput, FolderOpen, FolderPlus, Pencil, Plus } from 'lucide-vue-next'
 import { catalog, getDoc } from '@/lib/content'
 import { canCreateIn, canEditSlug, canMoveDoc, createWorkspaceDoc } from '@/lib/doc-manage'
 import { pendingEditSlug, pendingMoveSlug } from '@/lib/doc-session'
@@ -28,10 +28,14 @@ const spaceOpen = ref(false)
 const onSpace = computed(() => isSpacePath(route.path))
 const activeId = computed(() => activeSpaceItem(route.path))
 const creatingParent = ref('')
+const creatingAsFolder = ref(false)
 const createOpen = computed({
   get: () => creatingParent.value !== '',
   set: (value) => {
-    if (!value) creatingParent.value = ''
+    if (!value) {
+      creatingParent.value = ''
+      creatingAsFolder.value = false
+    }
   },
 })
 const actionMessage = ref('')
@@ -47,21 +51,6 @@ watch(
 
 function toggleSpace() {
   spaceOpen.value = !spaceOpen.value
-}
-
-function onSpaceTitleClick(event: MouseEvent) {
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-    spaceOpen.value = true
-    emit('navigate')
-    return
-  }
-  if (spaceOpen.value && onSpace.value) {
-    event.preventDefault()
-    spaceOpen.value = false
-    return
-  }
-  spaceOpen.value = true
-  emit('navigate')
 }
 
 function spaceSlug(to: string) {
@@ -85,9 +74,15 @@ function canMoveSpace(to: string) {
   return canMoveDoc(current, selected.value, ownedSlugs.value)
 }
 
-function openCreate(parentSlug: string) {
+function openCreate(payload: { parentSlug: string; asFolder: boolean } | string) {
   actionMessage.value = ''
-  creatingParent.value = parentSlug
+  if (typeof payload === 'string') {
+    creatingParent.value = payload
+    creatingAsFolder.value = false
+    return
+  }
+  creatingParent.value = payload.parentSlug
+  creatingAsFolder.value = payload.asFolder
 }
 
 function openMove(slug: string) {
@@ -113,6 +108,7 @@ async function onCreate(payload: {
   try {
     await createWorkspaceDoc(payload)
     creatingParent.value = ''
+    creatingAsFolder.value = false
     await router.push(payload.slug ? `/${payload.slug}` : '/')
     emit('navigate')
   } catch (error) {
@@ -154,22 +150,22 @@ async function onCreate(payload: {
               :class="spaceOpen ? 'rotate-90' : ''"
             />
           </button>
-          <RouterLink
-            to="/settings"
+          <button
+            type="button"
             :class="
               cn(
-                'flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-[13px] leading-5',
+                'flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-left text-[13px] leading-5',
                 onSpace
                   ? 'text-sidebar-accent-foreground'
                   : 'text-sidebar-foreground/80 hover:text-sidebar-accent-foreground',
               )
             "
-            @click="onSpaceTitleClick($event)"
+            @click="toggleSpace"
           >
             <FolderOpen v-if="spaceOpen" class="size-3.5 shrink-0 text-muted-foreground" />
             <Folder v-else class="size-3.5 shrink-0 text-muted-foreground" />
             <span class="truncate">{{ t('settingsNav') }}</span>
-          </RouterLink>
+          </button>
         </div>
         <div
           class="grid transition-[grid-template-rows] duration-200 ease-out"
@@ -233,9 +229,19 @@ async function onCreate(payload: {
                         class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
                         :title="t('newDoc')"
                         :aria-label="t('newDoc')"
-                        @click.stop="openCreate(spaceSlug(item.to))"
+                        @click.stop="openCreate({ parentSlug: spaceSlug(item.to), asFolder: false })"
                       >
                         <Plus class="size-3.5" />
+                      </button>
+                      <button
+                        v-if="canCreateSpace(item.to)"
+                        type="button"
+                        class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
+                        :title="t('newFolder')"
+                        :aria-label="t('newFolder')"
+                        @click.stop="openCreate({ parentSlug: spaceSlug(item.to), asFolder: true })"
+                      >
+                        <FolderPlus class="size-3.5" />
                       </button>
                     </div>
                   </div>
@@ -247,6 +253,11 @@ async function onCreate(payload: {
       </div>
       <p v-if="actionMessage" class="mt-3 px-2 text-xs text-muted-foreground">{{ actionMessage }}</p>
     </nav>
-    <DocCreateDialog v-model:open="createOpen" :parent-slug="creatingParent" @create="onCreate" />
+    <DocCreateDialog
+      v-model:open="createOpen"
+      :parent-slug="creatingParent"
+      :as-folder-default="creatingAsFolder"
+      @create="onCreate"
+    />
   </aside>
 </template>

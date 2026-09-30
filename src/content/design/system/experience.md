@@ -4,7 +4,7 @@ description: 原则、交互稿、组件体验与无障碍
 order: 1
 ---
 
-UIUE 维护。原则指导所有界面；具体像素看 [视觉规范](/design/specs)，交出去的包看 [设计交付](/design/handoff)。
+UIUE 维护。原则指导所有界面；具体像素看 [视觉规范](/design/system/specs)，交出去的包看 [设计交付](/design/handoff)。
 
 ## 体验原则
 
@@ -25,7 +25,7 @@ UIUE 维护。原则指导所有界面；具体像素看 [视觉规范](/design/
 ## 稿件与资源
 
 - 设计稿：
-- 原型：见 [原型与排期](/product/prototypes)
+- 原型：见 [原型与排期](/product/spec/prototypes)
 - 图标 / 插画：
 - 品牌与 Logo：浅色、深色各一份，放在 `public/`，用配置中心「工作空间标识」更换
 
