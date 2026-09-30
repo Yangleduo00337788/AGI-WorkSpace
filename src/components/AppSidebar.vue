@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { ChevronRight, FileText, Folder, FolderOpen, Pencil, Plus } from 'lucide-vue-next'
-import { catalog } from '@/lib/content'
-import { canCreateIn, canEditSlug, createWorkspaceDoc } from '@/lib/doc-manage'
-import { pendingEditSlug } from '@/lib/doc-session'
+import { ChevronRight, FileText, Folder, FolderInput, FolderOpen, Pencil, Plus } from 'lucide-vue-next'
+import { catalog, getDoc } from '@/lib/content'
+import { canCreateIn, canEditSlug, canMoveDoc, createWorkspaceDoc } from '@/lib/doc-manage'
+import { pendingEditSlug, pendingMoveSlug } from '@/lib/doc-session'
 import NavTree from '@/components/NavTree.vue'
 import DocCreateDialog from '@/components/DocCreateDialog.vue'
 import { useI18n } from '@/composables/useI18n'
@@ -78,9 +78,22 @@ function canCreateSpace(to: string) {
   return canCreateIn(spaceSlug(to), selected.value, ownedSlugs.value)
 }
 
+function canMoveSpace(to: string) {
+  if (to === '/settings') return false
+  const current = getDoc(spaceSlug(to))
+  if (!current) return false
+  return canMoveDoc(current, selected.value, ownedSlugs.value)
+}
+
 function openCreate(parentSlug: string) {
   actionMessage.value = ''
   creatingParent.value = parentSlug
+}
+
+function openMove(slug: string) {
+  pendingMoveSlug.value = slug
+  void router.push(slug ? `/${slug}` : '/')
+  emit('navigate')
 }
 
 function openEdit(slug: string) {
@@ -122,6 +135,7 @@ async function onCreate(payload: {
         @navigate="emit('navigate')"
         @create="openCreate"
         @edit="openEdit"
+        @move="openMove"
       />
       <div class="mt-0.5 flex flex-col">
         <div
@@ -189,7 +203,7 @@ async function onCreate(payload: {
                       <span class="truncate">{{ t(item.labelKey) }}</span>
                     </RouterLink>
                     <div
-                      v-if="anyRole && (canEditSpace(item.to) || canCreateSpace(item.to))"
+                      v-if="anyRole && (canEditSpace(item.to) || canCreateSpace(item.to) || canMoveSpace(item.to))"
                       class="flex shrink-0 pr-0.5 opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100"
                       :class="activeId === item.id ? 'opacity-100' : ''"
                     >
@@ -202,6 +216,16 @@ async function onCreate(payload: {
                         @click.stop="openEdit(spaceSlug(item.to))"
                       >
                         <Pencil class="size-3.5" />
+                      </button>
+                      <button
+                        v-if="canMoveSpace(item.to)"
+                        type="button"
+                        class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
+                        :title="t('moveDoc')"
+                        :aria-label="t('moveDoc')"
+                        @click.stop="openMove(spaceSlug(item.to))"
+                      >
+                        <FolderInput class="size-3.5" />
                       </button>
                       <button
                         v-if="canCreateSpace(item.to)"

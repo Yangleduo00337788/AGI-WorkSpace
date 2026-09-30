@@ -1,12 +1,17 @@
-import type { NavNode } from '@/lib/content'
-import { getDoc, isFolderNode } from '@/lib/content'
+import type { DocEntry, NavNode } from '@/lib/content'
+import { catalog, childRelPath, getDoc, isFolderNode, isProtectedDoc, parentSlugOf, toSlug } from '@/lib/content'
 import { isOwnedSlug, isSharedWritableSlug, type RoleId } from '@/lib/roles'
 import { syncCatalogFromDisk } from '@/lib/catalog-sync'
+import { moveDocDraft } from '@/lib/doc-drafts'
+import { moveDocOverride } from '@/lib/doc-store'
 import {
+  deleteWorkspaceFile,
+  moveWorkspaceDir,
   reconnectWorkspace,
   serializeMarkdown,
   useWorkspaceFs,
   workspaceFileExists,
+  writeRepoFile,
   writeWorkspaceFile,
 } from '@/lib/workspace-fs'
 
@@ -38,6 +43,48 @@ export function createParentForNode(node: NavNode, selected: RoleId[], owned: Se
   return ''
 }
 
+export function docParentSlug(doc: DocEntry): string {
+  if (doc.isIndex) {
+    const i = doc.slug.lastIndexOf('/')
+    return i === -1 ? '' : doc.slug.slice(0, i)
+  }
+  return parentSlugOf(doc)
+}
+
+export function docFileStem(doc: DocEntry): string {
+  if (doc.isIndex) return doc.segments[doc.segments.length - 1] ?? ''
+  const name = doc.relPath.split('/').pop() ?? ''
+  return name.replace(/\.md$/i, '')
+}
+
+export function canMoveDoc(doc: DocEntry, selected: RoleId[], owned: Set<string>) {
+  if (isProtectedDoc(doc)) return false
+  return canEditSlug(doc.slug, selected, owned)
+}
+
+export function moveTargetFolders(doc: DocEntry, selected: RoleId[], owned: Set<string>) {
+  const currentParent = docParentSlug(doc)
+  const options: { slug: string; title: string }[] = []
+  const seen = new Set<string>()
+  const spaceOnly = doc.segments[0] === 'space'
+  const push = (slug: string, title: string) => {
+    if (seen.has(slug)) return
+    seen.add(slug)
+    options.push({ slug, title })
+  }
+  if (!currentParent && !spaceOnly) push('', '—')
+  for (const item of catalog.docs) {
+    if (!item.isIndex || !item.slug) continue
+    if (spaceOnly && !item.slug.startsWith('space')) continue
+    if (!spaceOnly && item.slug.startsWith('space')) continue
+    if (doc.isIndex && (item.slug === doc.slug || item.slug.startsWith(`${doc.slug}/`))) continue
+    const sameParent = item.slug === currentParent
+    if (!sameParent && !canCreateIn(item.slug, selected, owned)) continue
+    push(item.slug, item.title)
+  }
+  return options
+}
+
 export async function createWorkspaceDoc(payload: {
   title: string
   description: string
@@ -62,4 +109,59 @@ export async function createWorkspaceDoc(payload: {
   const body = `# ${payload.title}\n\n`
   await writeWorkspaceFile(payload.relPath, serializeMarkdown(stub, body))
   await syncCatalogFromDisk()
+}
+
+export async function moveWorkspaceDoc(payload: {
+  slug: string
+  title: string
+  description: string
+  parentSlug: string
+  stem: string
+}) {
+  const { status, ready } = useWorkspaceFs()
+  if (status.value === 'need-permission') await reconnectWorkspace()
+  if (!ready.value) throw new Error('NEED_WORKSPACE')
+  const doc = getDoc(payload.slug)
+  if (!doc || isProtectedDoc(doc)) throw new Error('FORBIDDEN')
+  const nextRel = childRelPath(payload.parentSlug, payload.stem, doc.isIndex)
+  const nextSlug = toSlug(nextRel)
+  if (doc.isIndex && (nextSlug === doc.slug || nextSlug.startsWith(`${doc.slug}/`))) {
+    throw new Error('NESTED')
+  }
+  const nextDoc = {
+    ...doc,
+    title: payload.title.trim(),
+    description: payload.description.trim(),
+    slug: nextSlug,
+    relPath: nextRel,
+    isIndex: doc.isIndex,
+    segments: nextSlug ? nextSlug.split('/') : [],
+  }
+  const fileText = serializeMarkdown(nextDoc, doc.content)
+
+  if (nextRel === doc.relPath) {
+    await writeWorkspaceFile(doc.relPath, fileText)
+    if (nextSlug === 'space/harness/AGENTS') {
+      await writeRepoFile('AGENTS.md', `${doc.content.replace(/^\n+/, '')}\n`)
+    }
+    await syncCatalogFromDisk()
+    return nextSlug
+  }
+
+  if (doc.isIndex) {
+    await moveWorkspaceDir(doc.slug, nextSlug)
+    await writeWorkspaceFile(nextRel, fileText)
+  } else {
+    if (await workspaceFileExists(nextRel)) throw new Error('EXISTS')
+    await writeWorkspaceFile(nextRel, fileText)
+    await deleteWorkspaceFile(doc.relPath)
+  }
+
+  await moveDocDraft(doc.slug, nextSlug)
+  await moveDocOverride(doc.slug, nextSlug)
+  if (nextSlug === 'space/harness/AGENTS') {
+    await writeRepoFile('AGENTS.md', `${doc.content.replace(/^\n+/, '')}\n`)
+  }
+  await syncCatalogFromDisk()
+  return nextSlug
 }

@@ -41,3 +41,11 @@ export async function removeDocOverride(slug: string): Promise<void> {
     tx.onerror = () => reject(tx.error)
   })
 }
+
+export async function moveDocOverride(fromSlug: string, toSlug: string): Promise<void> {
+  if (fromSlug === toSlug) return
+  const body = docOverrides.get(fromSlug)
+  if (body === undefined) return
+  await saveDocOverride(toSlug, body)
+  await removeDocOverride(fromSlug)
+}

@@ -214,9 +214,64 @@ export async function deleteWorkspaceFile(relPath: string): Promise<void> {
   await dir.removeEntry(fileName)
 }
 
-export async function listContentMarkdown(): Promise<{ relPath: string; raw: string }[]> {
+async function contentDirHandle(relDir: string, create = false): Promise<FileSystemDirectoryHandle> {
+  if (!contentDir || status.value !== 'ready') throw new Error('NOT_READY')
+  let dir = contentDir
+  for (const part of relDir.split('/').filter(Boolean)) {
+    dir = await dir.getDirectoryHandle(part, { create })
+  }
+  return dir
+}
+
+async function copyDirectory(
+  source: FileSystemDirectoryHandle,
+  destParent: FileSystemDirectoryHandle,
+  destName: string,
+) {
+  const dest = await destParent.getDirectoryHandle(destName, { create: true })
+  for await (const [name, handle] of source.entries()) {
+    if (handle.kind === 'file') {
+      const file = await (handle as FileSystemFileHandle).getFile()
+      const out = await dest.getFileHandle(name, { create: true })
+      const writable = await out.createWritable()
+      await writable.write(await file.arrayBuffer())
+      await writable.close()
+    } else {
+      await copyDirectory(handle as FileSystemDirectoryHandle, dest, name)
+    }
+  }
+}
+
+export async function moveWorkspaceDir(fromDir: string, toDir: string): Promise<void> {
+  if (!contentDir || status.value !== 'ready') throw new Error('NOT_READY')
+  const from = fromDir.replaceAll('\\', '/').replace(/^\/+|\/+$/g, '')
+  const to = toDir.replaceAll('\\', '/').replace(/^\/+|\/+$/g, '')
+  if (!from || !to || from === to) throw new Error('BAD_PATH')
+  if (to.startsWith(`${from}/`)) throw new Error('NESTED')
+  if (await workspaceFileExists(`${to}/index.md`)) throw new Error('EXISTS')
+  const fromParts = from.split('/')
+  const fromName = fromParts.pop()!
+  const fromParent = fromParts.length ? await contentDirHandle(fromParts.join('/')) : contentDir
+  const source = await fromParent.getDirectoryHandle(fromName)
+  const toParts = to.split('/')
+  const toName = toParts.pop()!
+  const toParent = toParts.length ? await contentDirHandle(toParts.join('/'), true) : contentDir
+  await copyDirectory(source, toParent, toName)
+  await fromParent.removeEntry(fromName, { recursive: true })
+}
+
+export async function moveWorkspaceFile(fromRel: string, toRel: string): Promise<void> {
+  if (fromRel === toRel) return
+  if (await workspaceFileExists(toRel)) throw new Error('EXISTS')
+  const text = await readWorkspaceFile(fromRel)
+  if (text === null) throw new Error('MISSING')
+  await writeWorkspaceFile(toRel, text)
+  await deleteWorkspaceFile(fromRel)
+}
+
+export async function listContentMarkdown(): Promise<{ relPath: string; raw: string; updatedAt?: number }[]> {
   if (!contentDir || status.value !== 'ready') return []
-  const out: { relPath: string; raw: string }[] = []
+  const out: { relPath: string; raw: string; updatedAt?: number }[] = []
 
   async function walk(dir: FileSystemDirectoryHandle, prefix: string) {
     for await (const [name, handle] of dir.entries()) {
@@ -228,7 +283,11 @@ export async function listContentMarkdown(): Promise<{ relPath: string; raw: str
       }
       if (!name.toLowerCase().endsWith('.md')) continue
       const file = await (handle as FileSystemFileHandle).getFile()
-      out.push({ relPath: rel.replaceAll('\\', '/'), raw: await file.text() })
+      out.push({
+        relPath: rel.replaceAll('\\', '/'),
+        raw: await file.text(),
+        updatedAt: file.lastModified,
+      })
     }
   }
 
@@ -253,7 +312,8 @@ function yamlScalar(value: string): string {
 }
 
 export function serializeMarkdown(doc: DocEntry, body: string): string {
-  return `---\ntitle: ${yamlScalar(doc.title)}\ndescription: ${yamlScalar(doc.description)}\norder: ${doc.order}\n---\n\n${body.replace(/^\n+/, '')}\n`
+  const updated = new Date().toISOString()
+  return `---\ntitle: ${yamlScalar(doc.title)}\ndescription: ${yamlScalar(doc.description)}\norder: ${doc.order}\nupdated: ${updated}\n---\n\n${body.replace(/^\n+/, '')}\n`
 }
 
 function assertSafeRelPath(relPath: string) {

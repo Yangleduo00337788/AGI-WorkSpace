@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { ChevronRight, FileText, Folder, FolderOpen, Pencil, Plus } from 'lucide-vue-next'
+import { ChevronRight, FileText, Folder, FolderInput, FolderOpen, Pencil, Plus } from 'lucide-vue-next'
 import type { NavNode } from '@/lib/content'
-import { isFolderNode, slugFromPath } from '@/lib/content'
-import { canEditSlug, createParentForNode } from '@/lib/doc-manage'
+import { getDoc, isFolderNode, slugFromPath } from '@/lib/content'
+import { canEditSlug, canMoveDoc, createParentForNode } from '@/lib/doc-manage'
 import { useRoles } from '@/composables/useRoles'
 import { useI18n } from '@/composables/useI18n'
 import { isOwnedSlug } from '@/lib/roles'
@@ -21,6 +21,7 @@ const emit = defineEmits<{
   navigate: []
   create: [parentSlug: string]
   edit: [slug: string]
+  move: [slug: string]
 }>()
 
 const { t } = useI18n()
@@ -60,6 +61,13 @@ function createParent(node: NavNode) {
   return createParentForNode(node, selected.value, ownedSlugs.value)
 }
 
+function canMoveNode(node: NavNode) {
+  if (node.slug === undefined) return false
+  const current = getDoc(node.slug)
+  if (!current) return false
+  return canMoveDoc(current, selected.value, ownedSlugs.value)
+}
+
 function onCreate(event: Event, node: NavNode) {
   event.preventDefault()
   event.stopPropagation()
@@ -73,6 +81,13 @@ function onEdit(event: Event, node: NavNode) {
   event.stopPropagation()
   if (node.slug === undefined) return
   emit('edit', node.slug)
+}
+
+function onMove(event: Event, node: NavNode) {
+  event.preventDefault()
+  event.stopPropagation()
+  if (node.slug === undefined) return
+  emit('move', node.slug)
 }
 
 function toggle(id: string) {
@@ -175,7 +190,7 @@ watch(
             <span class="truncate">{{ node.title }}</span>
           </button>
           <div
-            v-if="showActions && (canEditNode(node) || createParent(node))"
+            v-if="showActions && (canEditNode(node) || createParent(node) || canMoveNode(node))"
             class="flex shrink-0 pr-0.5 opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100"
             :class="isActive(node.slug) ? 'opacity-100' : ''"
           >
@@ -188,6 +203,16 @@ watch(
               @click="onEdit($event, node)"
             >
               <Pencil class="size-3.5" />
+            </button>
+            <button
+              v-if="canMoveNode(node)"
+              type="button"
+              class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
+              :title="t('moveDoc')"
+              :aria-label="t('moveDoc')"
+              @click="onMove($event, node)"
+            >
+              <FolderInput class="size-3.5" />
             </button>
             <button
               v-if="createParent(node)"
@@ -215,6 +240,7 @@ watch(
                 @navigate="emit('navigate')"
                 @create="emit('create', $event)"
                 @edit="emit('edit', $event)"
+                @move="emit('move', $event)"
               />
             </div>
           </div>
@@ -247,7 +273,7 @@ watch(
           <span class="truncate">{{ node.title }}</span>
         </RouterLink>
         <div
-          v-if="showActions && (canEditNode(node) || createParent(node))"
+          v-if="showActions && (canEditNode(node) || createParent(node) || canMoveNode(node))"
           class="flex shrink-0 pr-0.5 opacity-0 transition-opacity group-hover/nav:opacity-100 group-focus-within/nav:opacity-100"
           :class="isActive(node.slug) ? 'opacity-100' : ''"
         >
@@ -260,6 +286,16 @@ watch(
             @click="onEdit($event, node)"
           >
             <Pencil class="size-3.5" />
+          </button>
+          <button
+            v-if="canMoveNode(node)"
+            type="button"
+            class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-accent-foreground"
+            :title="t('moveDoc')"
+            :aria-label="t('moveDoc')"
+            @click="onMove($event, node)"
+          >
+            <FolderInput class="size-3.5" />
           </button>
           <button
             v-if="createParent(node)"
