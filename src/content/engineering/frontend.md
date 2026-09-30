@@ -13,7 +13,7 @@ FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/ha
 | 路由 | History SPA，文档走 `/:slug(.*)`，配置中心 `/settings` |
 | 布局 | 顶栏 + 可调整左侧导航 + 正文 + 当前文档数量 + 本页目录 |
 | 文档页 | `DocView.vue` 通用渲染，不按文档拆页面 |
-| 状态 | 主题 / 语言 / 侧栏宽度在 localStorage；角色以 `src/config/workspace-roles.json` 为准（勾选立刻写盘）；目录句柄在 IndexedDB |
+| 状态 | 主题 / 语言 / 侧栏宽度在 localStorage；角色以 `src/config/workspace-roles.json` 为准（勾选立刻写盘）；目录句柄与未保存草稿在 IndexedDB |
 | 写回 | File System Access API，保存时写 `src/content/*.md` |
 | 导航 | 授权工作目录后按磁盘扫描 Markdown；未授权时用构建时打包的文件 |
 | 远程 | 配置中心绑定代码空间后可提交推送 |
@@ -36,6 +36,7 @@ FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/ha
 | 工作目录 | 全局 | IndexedDB handle | 用户授权 |
 | 文档目录 | 全局 | 磁盘 `src/content`（授权后） | 保存 / 新建 / 删除 / 窗口重新聚焦 |
 | 文档覆盖 | 文档 | IndexedDB + 磁盘 MD | 有写权限的角色 |
+| 文档草稿 | 文档 | IndexedDB | 编辑自动写入；保存或丢弃后清除 |
 | 标识 | 全局 | `src/config/branding.json` + `public/logo-*.png` | 配置中心「工作空间标识」 |
 | 代码空间 | 全局 | 本机 `.agi-workspace.local.json` | 配置中心绑定 |
 | 主题 / 语言 | 全局 | localStorage | 顶栏切换 |
@@ -47,20 +48,22 @@ FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/ha
 | 文档正文 | 渲染 MD | 骨架屏 | 未找到该文档 | 保存失败提示去配置中心 |
 | 搜索 | 关闭 | — | 没有匹配的文档 | — |
 | 侧栏目录 | 按 MD 树 | 授权后与磁盘同步 | — | — |
-| 编辑 | 预览 | 保存中按钮禁用 | — | 无目录授权 / 无角色权限 |
+| 编辑 | 预览 | 保存中按钮禁用 | 有未保存草稿时提示继续 / 丢弃 | 无目录授权 / 无角色权限；离开未保存会确认 |
 | 图片 | 文中展示 | 从本地目录读 blob | 无图 | 未授权目录时无法粘贴 |
+| 流程图 | Mermaid 渲染 | 编辑器下方预览 | 无图块 | 语法错误显示在预览区 |
 
 ## 组件契约
 
 | 组件 | 入参 | 事件 | 对应设计 |
 | --- | --- | --- | --- |
 | `NavTree` | 导航节点 | 展开 / 跳转 | 左侧目录；首页「开始阅读」复用同一棵树 |
-| `DocVisualEditor` | Markdown、文档目录 | 保存、贴图 | 预览内编辑 |
+| `DocVisualEditor` | Markdown、文档目录 | 保存、贴图、插入流程图 | 预览内编辑 |
 | `DocHomeHero` | — | — | 项目首页 Logo、slogan、介绍 |
 | `DocHomeNav` | — | — | 项目首页目录，层级与侧栏相同 |
 | `DocStats` | — | — | 右侧当前文档真实数量（不含空间配置） |
 | `DocChildren` | 当前 slug | — | 目录页列出子目录 / 文档 |
 | `DocCreateDialog` | 父级 slug | 创建 | 按角色新建 MD |
+| `DocMoveDialog` | slug | 重命名 / 移动 | 改标题、文件名或父目录 |
 
 - 与设计 token：颜色、圆角、间距走 `src/styles/globals.css`，不在组件里写死另一套色。
 
@@ -68,7 +71,7 @@ FE 维护。描述前端如何落地。设计结论以 [设计交付](/design/ha
 
 - 键盘：侧栏、搜索、编辑工具栏可 Tab；`Ctrl/Cmd + K` 打开搜索
 - 焦点：弹层关闭后回到触发按钮
-- 图标按钮必须有 `aria-label`（折叠导航、主题、空间配置）
+- 图标按钮必须有 `aria-label`（折叠导航、主题、空间配置、重命名/移动）
 - 对比：深浅色正文都不使用过浅灰色
 
 ## 当前项目补充

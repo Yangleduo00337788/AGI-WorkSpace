@@ -11,6 +11,8 @@ export interface DocEntry {
   segments: string[]
   isIndex: boolean
   relPath: string
+  /** 磁盘文件 mtime；未授权目录、构建打包文件可能为空 */
+  updatedAt?: number
 }
 
 export interface NavNode {
@@ -26,11 +28,13 @@ interface Frontmatter {
   title?: string
   description?: string
   order?: number
+  updated?: string
 }
 
 export interface ContentFile {
   relPath: string
   raw: string
+  updatedAt?: number
 }
 
 const bundledFiles = import.meta.glob('../content/**/*.md', {
@@ -77,6 +81,8 @@ export function parseFrontmatter(raw: string): { data: Frontmatter; content: str
       data.title = value
     } else if (key === 'description') {
       data.description = value
+    } else if (key === 'updated') {
+      data.updated = value
     }
   }
   return { data, content }
@@ -140,11 +146,13 @@ function flattenNav(nodes: NavNode[]): DocEntry[] {
   return list
 }
 
-export function docFromFile(relPath: string, raw: string): DocEntry {
+export function docFromFile(relPath: string, raw: string, updatedAt?: number): DocEntry {
   const { data, content } = parseFrontmatter(raw)
   const slug = toSlug(relPath)
   const segments = slug ? slug.split('/') : []
   const fallback = segments.length ? titleFromSegment(segments[segments.length - 1]!) : workspaceName()
+  const fromFrontmatter = data.updated ? Date.parse(data.updated) : Number.NaN
+  const stamp = updatedAt ?? (Number.isFinite(fromFrontmatter) ? fromFrontmatter : undefined)
   return {
     slug,
     title: data.title ?? fallback,
@@ -154,6 +162,7 @@ export function docFromFile(relPath: string, raw: string): DocEntry {
     segments,
     isIndex: isIndexRel(relPath) || slug === '',
     relPath: relPath.replaceAll('\\', '/'),
+    updatedAt: stamp,
   }
 }
 
@@ -237,7 +246,7 @@ export function bundledContentFiles(): ContentFile[] {
 export function replaceCatalog(files: ContentFile[]) {
   const docs = files
     .filter((file) => file.relPath.replaceAll('\\', '/').toLowerCase().endsWith('.md'))
-    .map((file) => docFromFile(file.relPath, file.raw))
+    .map((file) => docFromFile(file.relPath, file.raw, file.updatedAt))
     .sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug))
 
   docsBySlug.clear()
@@ -359,6 +368,17 @@ export function pageChildren(slug: string): { folders: NavNode[]; docs: NavNode[
     else docs.push(node)
   }
   return { folders, docs }
+}
+
+export function formatDocUpdatedAt(ms: number | undefined, locale: 'zh' | 'en'): string {
+  if (!ms) return ''
+  return new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(ms)
 }
 
 export function isProtectedDoc(doc: DocEntry): boolean {

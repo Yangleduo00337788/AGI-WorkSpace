@@ -8,11 +8,14 @@ import DocChildren from '@/components/DocChildren.vue'
 import DocHomeNav from '@/components/DocHomeNav.vue'
 import DocHomeHero from '@/components/DocHomeHero.vue'
 import { useI18n } from '@/composables/useI18n'
-import { catalog, docDir, getDoc, getNeighbors, isProtectedDoc, slugFromPath } from '@/lib/content'
-import { canCreateIn, canEditSlug, createWorkspaceDoc } from '@/lib/doc-manage'
-import { pendingEditSlug } from '@/lib/doc-session'
+import { catalog, docDir, formatDocUpdatedAt, getDoc, getNeighbors, isProtectedDoc, slugFromPath } from '@/lib/content'
+import { canCreateIn, canEditSlug, canMoveDoc, createWorkspaceDoc, moveWorkspaceDoc } from '@/lib/doc-manage'
+import { pendingEditSlug, pendingMoveSlug } from '@/lib/doc-session'
 import { hydrateContentImages } from '@/lib/content-images'
 import { saveDocOverride, removeDocOverride, docOverrides } from '@/lib/doc-store'
+import { docDrafts, removeDocDraft, saveDocDraft } from '@/lib/doc-drafts'
+import { bindUnsavedBeforeUnload, setUnsavedFlush, setUnsavedLeave } from '@/lib/editor-session'
+import { renderMermaidIn } from '@/lib/mermaid-render'
 import { syncCatalogFromDisk } from '@/lib/catalog-sync'
 import {
   deleteWorkspaceFile,
@@ -26,6 +29,7 @@ import { pushWorkspaceFile, useRemoteGit } from '@/lib/remote-git'
 import { reindexDoc } from '@/lib/search'
 import DocVisualEditor from '@/components/DocVisualEditor.vue'
 import DocCreateDialog from '@/components/DocCreateDialog.vue'
+import DocMoveDialog from '@/components/DocMoveDialog.vue'
 import { Button } from '@/components/ui/button'
 import { useRoles } from '@/composables/useRoles'
 import { workspaceName } from '@/lib/branding'
@@ -65,26 +69,82 @@ const createParent = computed(() => {
 })
 const canCreate = computed(() => canCreateIn(createParent.value, selected.value, ownedSlugs.value))
 const canDelete = computed(() => canEdit.value && doc.value && !isProtectedDoc(doc.value))
+const canMove = computed(() => Boolean(doc.value && canMoveDoc(doc.value, selected.value, ownedSlugs.value)))
+const updatedLabel = computed(() => {
+  void catalog.revision
+  const stamp = formatDocUpdatedAt(doc.value?.updatedAt, locale.value)
+  return stamp ? `${t.value('docUpdatedAt')} ${stamp}` : ''
+})
+const hasStoredDraft = computed(() => {
+  void docDrafts.size
+  const stored = docDrafts.get(slug.value)
+  if (stored === undefined || !doc.value) return false
+  return stored !== doc.value.content
+})
 
 const editing = ref(false)
 const draft = ref('')
+const lastSaved = ref('')
+const draftRestored = ref(false)
 const saving = ref(false)
 const saveMessage = ref('')
 const visualEditor = ref<{ getMarkdown: () => string } | null>(null)
 const creating = ref(false)
+const moving = ref(false)
 const articleRoot = ref<HTMLElement | null>(null)
+let draftTimer = 0
+let stopBeforeUnload: (() => void) | undefined
+
+function liveBody() {
+  return visualEditor.value?.getMarkdown() ?? draft.value
+}
+
+function isDirty() {
+  return editing.value && liveBody() !== lastSaved.value
+}
+
+function syncLeaveGuard() {
+  setUnsavedLeave(isDirty(), t.value('unsavedLeave'))
+}
+
+function flushDraftNow() {
+  if (!editing.value) return
+  const body = liveBody()
+  draft.value = body
+  if (body === lastSaved.value) void removeDocDraft(slug.value)
+  else void saveDocDraft(slug.value, body)
+  syncLeaveGuard()
+}
+
+function discardStoredDraft() {
+  if (!window.confirm(t.value('discardDraftConfirm'))) return
+  void removeDocDraft(slug.value)
+}
 
 function startEdit() {
   if (!canEdit.value || !doc.value) return
-  draft.value = doc.value.content
+  lastSaved.value = doc.value.content
+  const stored = docDrafts.get(slug.value)
+  if (stored !== undefined && stored !== lastSaved.value) {
+    draft.value = stored
+    draftRestored.value = true
+  } else {
+    draft.value = lastSaved.value
+    draftRestored.value = false
+  }
   editing.value = true
   saveMessage.value = ''
+  syncLeaveGuard()
 }
 
 function cancelEdit() {
+  if (isDirty() && !window.confirm(t.value('discardDraftConfirm'))) return
+  void removeDocDraft(slug.value)
   editing.value = false
   draft.value = ''
+  draftRestored.value = false
   saveMessage.value = ''
+  setUnsavedLeave(false)
 }
 
 async function saveEdit() {
@@ -108,9 +168,14 @@ async function saveEdit() {
       await writeRepoFile('AGENTS.md', `${body.replace(/^\n+/, '')}\n`)
     }
     await saveDocOverride(current.slug, body)
+    await removeDocDraft(current.slug)
+    lastSaved.value = body
+    await syncCatalogFromDisk()
     const updated = getDoc(current.slug)
     if (updated) reindexDoc(updated)
     editing.value = false
+    draftRestored.value = false
+    setUnsavedLeave(false)
     if (remoteReady.value && autoPush.value) {
       try {
         await pushWorkspaceFile(current.relPath, fileText)
@@ -150,6 +215,44 @@ async function createDoc(payload: {
   }
 }
 
+async function applyMove(payload: {
+  title: string
+  description: string
+  parentSlug: string
+  stem: string
+}) {
+  const current = doc.value
+  if (!current) return
+  saveMessage.value = ''
+  try {
+    const nextSlug = await moveWorkspaceDoc({
+      slug: current.slug,
+      title: payload.title,
+      description: payload.description,
+      parentSlug: payload.parentSlug,
+      stem: payload.stem,
+    })
+    moving.value = false
+    pendingMoveSlug.value = null
+    saveMessage.value = t.value('moveDocOk')
+    await router.push(nextSlug ? `/${nextSlug}` : '/')
+  } catch (error) {
+    const code = error instanceof Error ? error.message : ''
+    if (code === 'NEED_WORKSPACE') saveMessage.value = t.value('needWorkspace')
+    else if (code === 'EXISTS') saveMessage.value = t.value('docExists')
+    else if (code === 'NESTED') saveMessage.value = t.value('moveDocNested')
+    else saveMessage.value = t.value('settingsFail')
+  }
+}
+
+function tryStartPendingMove() {
+  if (pendingMoveSlug.value === null) return
+  if (pendingMoveSlug.value !== slug.value) return
+  if (!canMove.value) return
+  moving.value = true
+  pendingMoveSlug.value = null
+}
+
 async function deleteCurrent() {
   const current = doc.value
   if (!current || !canDelete.value) return
@@ -163,6 +266,7 @@ async function deleteCurrent() {
     }
     await deleteWorkspaceFile(current.relPath)
     await removeDocOverride(current.slug)
+    await removeDocDraft(current.slug)
     await syncCatalogFromDisk()
     const parent = docDir(current)
     await router.push(parent ? `/${parent}` : '/')
@@ -280,14 +384,47 @@ function tryStartPendingEdit() {
   pendingEditSlug.value = null
 }
 
-watch([slug, locale, () => docOverrides.get(slug.value), () => catalog.revision], () => {
+watch(slug, () => {
   editing.value = false
+  draftRestored.value = false
+  setUnsavedLeave(false)
   void load()
-  queueMicrotask(() => tryStartPendingEdit())
-}, { immediate: true })
+  queueMicrotask(() => {
+    tryStartPendingEdit()
+    tryStartPendingMove()
+  })
+})
+
+watch(locale, () => {
+  if (!editing.value) void load()
+})
+
+watch(
+  () => catalog.revision,
+  () => {
+    if (!editing.value) void load()
+  },
+)
 
 watch(pendingEditSlug, () => {
   tryStartPendingEdit()
+})
+
+watch(pendingMoveSlug, () => {
+  tryStartPendingMove()
+})
+
+watch(draft, () => {
+  if (!editing.value) return
+  syncLeaveGuard()
+  window.clearTimeout(draftTimer)
+  draftTimer = window.setTimeout(() => {
+    if (!editing.value) return
+    const body = liveBody()
+    if (body === lastSaved.value) void removeDocDraft(slug.value)
+    else void saveDocDraft(slug.value, body)
+    syncLeaveGuard()
+  }, 700)
 })
 
 watch(
@@ -306,17 +443,36 @@ watch(html, async () => {
   })
   if (articleRoot.value && doc.value) {
     await hydrateContentImages(articleRoot.value, docDir(doc.value))
+    await renderMermaidIn(articleRoot.value)
   }
 })
+
+function onThemeChange() {
+  if (editing.value) return
+  if (articleRoot.value) void renderMermaidIn(articleRoot.value)
+}
 
 onMounted(() => {
   window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('resize', onScroll, { passive: true })
+  window.addEventListener('agi-theme', onThemeChange)
+  stopBeforeUnload = bindUnsavedBeforeUnload()
+  setUnsavedFlush(flushDraftNow)
+  void load()
+  queueMicrotask(() => {
+    tryStartPendingEdit()
+    tryStartPendingMove()
+  })
 })
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
   window.removeEventListener('resize', onScroll)
+  window.removeEventListener('agi-theme', onThemeChange)
   if (raf) window.cancelAnimationFrame(raf)
+  window.clearTimeout(draftTimer)
+  stopBeforeUnload?.()
+  setUnsavedFlush(null)
+  setUnsavedLeave(false)
 })
 </script>
 
@@ -325,10 +481,19 @@ onUnmounted(() => {
     <div class="min-w-0 flex-1 px-6 py-8 md:px-10 lg:px-12">
       <Transition name="doc" mode="out-in">
         <article v-if="doc" :key="slug || 'home'" class="mx-auto max-w-3xl">
-          <DocHomeHero v-if="!slug && !editing" />
+          <template v-if="!slug && !editing">
+            <div class="mb-4 flex items-baseline justify-between gap-4">
+              <h1 class="min-w-0 text-3xl font-semibold tracking-tight text-balance">{{ doc.title }}</h1>
+              <time v-if="updatedLabel" class="shrink-0 text-xs text-muted-foreground whitespace-nowrap">{{ updatedLabel }}</time>
+            </div>
+            <DocHomeHero />
+          </template>
           <template v-else>
             <p v-if="doc.description" class="mb-2 text-sm text-muted-foreground">{{ doc.description }}</p>
-            <h1 class="text-3xl font-semibold tracking-tight text-balance">{{ doc.title }}</h1>
+            <div class="flex items-baseline justify-between gap-4">
+              <h1 class="min-w-0 text-3xl font-semibold tracking-tight text-balance">{{ doc.title }}</h1>
+              <time v-if="updatedLabel" class="shrink-0 text-xs text-muted-foreground whitespace-nowrap">{{ updatedLabel }}</time>
+            </div>
           </template>
           <p v-if="selected.length" class="mt-2 text-xs text-muted-foreground">
             {{ canEdit ? t('ownedBadge') : t('readOnlyBadge') }}
@@ -343,6 +508,9 @@ onUnmounted(() => {
             <Button v-if="canCreate && !editing" size="sm" variant="outline" @click="creating = true">
               {{ t('newDoc') }}
             </Button>
+            <Button v-if="canMove && !editing" size="sm" variant="outline" @click="moving = true">
+              {{ t('moveDoc') }}
+            </Button>
             <Button v-if="canDelete && !editing" size="sm" variant="ghost" @click="deleteCurrent">
               {{ t('deleteDoc') }}
             </Button>
@@ -355,6 +523,12 @@ onUnmounted(() => {
             </template>
           </div>
           <p v-if="saveMessage" class="mt-2 text-xs text-muted-foreground">{{ saveMessage }}</p>
+          <p v-if="editing && draftRestored" class="mt-2 text-xs text-muted-foreground">{{ t('draftRestored') }}</p>
+          <p v-if="!editing && hasStoredDraft" class="mt-2 text-xs text-muted-foreground">
+            {{ t('draftPending') }}
+            <button type="button" class="ml-2 underline hover:text-foreground" @click="startEdit">{{ t('resumeDraft') }}</button>
+            <button type="button" class="ml-2 underline hover:text-foreground" @click="discardStoredDraft">{{ t('discardDraft') }}</button>
+          </p>
           <div class="mt-3 h-px w-full bg-border" />
 
           <DocVisualEditor
@@ -422,5 +596,6 @@ onUnmounted(() => {
       />
     </aside>
     <DocCreateDialog v-model:open="creating" :parent-slug="createParent" @create="createDoc" />
+    <DocMoveDialog v-model:open="moving" :slug="slug" @move="applyMove" />
   </div>
 </template>
